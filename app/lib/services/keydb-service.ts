@@ -2,7 +2,6 @@ import { openDB, DBSchema, IDBPDatabase } from "idb";
 
 import { getDbKey } from "./crypto-service";
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 interface KeyDB extends DBSchema {
   ak: {
     key: string;
@@ -22,7 +21,7 @@ const getDB = async () => {
   keyDb = await openDB<KeyDB>("kdb", 1, {
     upgrade(db) {
       db.createObjectStore("ak");
-    }
+    },
   });
   return keyDb;
 };
@@ -36,7 +35,7 @@ export const storeKey = async (
   const dbKey = await getDbKey(userId);
   const keyData = await crypto.subtle.wrapKey("raw", key, dbKey, {
     name: "AES-GCM",
-    iv: new TextEncoder().encode(keyId + userId)
+    iv: new TextEncoder().encode(keyId + userId),
   });
 
   await db.add("ak", { data: keyData, setOn: new Date().getTime() }, keyId);
@@ -55,7 +54,7 @@ export const getKey = async (keyId: string, userId: string) => {
     dbKey,
     {
       name: "AES-GCM",
-      iv: new TextEncoder().encode(keyId + userId)
+      iv: new TextEncoder().encode(keyId + userId),
     },
     { name: "AES-GCM" },
     true,
