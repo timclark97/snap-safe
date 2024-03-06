@@ -6,3 +6,4 @@ export { default as Select } from "./Select";
 export { default as Alert } from "./Alert";
 export { default as DashHeader } from "./DashHeader";
 export { default as LinkButton } from "./LinkButton";
+export { default as FormCard } from "./FormCard";

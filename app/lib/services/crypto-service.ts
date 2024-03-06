@@ -35,7 +35,7 @@ export const getDbKey = async (userId: string) => {
       name: "PBKDF2",
       salt: new TextEncoder().encode(userId),
       iterations: 600000,
-      hash: "SHA-256"
+      hash: "SHA-256",
     },
     wrappingKeyMaterial,
     { name: "AES-GCM", length: 256 },
@@ -60,7 +60,7 @@ export const deriveMK = async (
     "raw",
     new TextEncoder().encode(password.trim().normalize() + userId),
     { name: "PBKDF2" },
-    false,
+    true,
     ["deriveKey", "deriveBits"]
   );
 
@@ -76,7 +76,7 @@ export const deriveMK = async (
       name: "PBKDF2",
       salt: saltArray,
       iterations: 210000,
-      hash: "SHA-512"
+      hash: "SHA-512",
     },
     wrappingKeyMaterial,
     { name: "AES-GCM", length: 256 },
@@ -91,7 +91,7 @@ export const createKeyPair = async () => {
       name: "RSA-OAEP",
       modulusLength: 4096,
       publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-      hash: "SHA-256"
+      hash: "SHA-256",
     },
     true,
     ["encrypt", "decrypt"]

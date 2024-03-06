@@ -1,5 +1,6 @@
 import { openDB, DBSchema, IDBPDatabase } from "idb";
 
+import { bufferToBase64, base64ToArray } from "../helpers/binary-helper";
 import { getDbKey } from "./crypto-service";
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
@@ -7,7 +8,7 @@ interface KeyDB extends DBSchema {
   ak: {
     key: string;
     value: {
-      data: ArrayBuffer;
+      data: string;
       setOn: number;
     };
   };
@@ -22,7 +23,7 @@ const getDB = async () => {
   keyDb = await openDB<KeyDB>("kdb", 1, {
     upgrade(db) {
       db.createObjectStore("ak");
-    }
+    },
   });
   return keyDb;
 };
@@ -36,10 +37,33 @@ export const storeKey = async (
   const dbKey = await getDbKey(userId);
   const keyData = await crypto.subtle.wrapKey("raw", key, dbKey, {
     name: "AES-GCM",
-    iv: new TextEncoder().encode(keyId + userId)
+    iv: new TextEncoder().encode(keyId + userId),
   });
 
-  await db.add("ak", { data: keyData, setOn: new Date().getTime() }, keyId);
+  await db.add(
+    "ak",
+    { data: bufferToBase64(keyData), setOn: new Date().getTime() },
+    keyId
+  );
+};
+
+export const updateKey = async (
+  key: CryptoKey,
+  keyId: string,
+  userId: string
+) => {
+  const db = await getDB();
+  const dbKey = await getDbKey(userId);
+  const keyData = await crypto.subtle.wrapKey("raw", key, dbKey, {
+    name: "AES-GCM",
+    iv: new TextEncoder().encode(keyId + userId),
+  });
+
+  await db.put(
+    "ak",
+    { data: bufferToBase64(keyData), setOn: new Date().getTime() },
+    keyId
+  );
 };
 
 export const getKey = async (keyId: string, userId: string) => {
@@ -51,11 +75,11 @@ export const getKey = async (keyId: string, userId: string) => {
   }
   const key = await crypto.subtle.unwrapKey(
     "raw",
-    keyData.data,
+    base64ToArray(keyData.data),
     dbKey,
     {
       name: "AES-GCM",
-      iv: new TextEncoder().encode(keyId + userId)
+      iv: new TextEncoder().encode(keyId + userId),
     },
     { name: "AES-GCM" },
     true,

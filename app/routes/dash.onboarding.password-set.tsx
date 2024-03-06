@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import type {
   ActionFunctionArgs,
   LoaderFunctionArgs,
-  MetaFunction
+  MetaFunction,
 } from "@remix-run/node";
 import { redirect, json } from "@remix-run/node";
 import { useFetcher, useLoaderData, useRevalidator } from "@remix-run/react";
@@ -13,7 +13,7 @@ import {
   hasNumber,
   hasSymbol,
   hasUpperCase,
-  isSecurePassword
+  isSecurePassword,
 } from "@/lib/helpers/password-helper";
 import { sqlite, users } from "@/lib/sqlite";
 import { bufferToBase64, arrayToBase64 } from "@/lib/helpers/binary-helper";
@@ -21,7 +21,7 @@ import {
   deriveMK,
   createKeyPair,
   createSalt,
-  createIv
+  createIv,
 } from "@/lib/services/crypto-service";
 import { requireSession } from "@/lib/services";
 import { Button, Input, Alert } from "@/components/common";
@@ -35,13 +35,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const session = await requireSession(request);
 
   const user = await sqlite.query.users.findFirst({
-    where: (u, { eq }) => eq(u.id, session.userId)
+    where: (u, { eq }) => eq(u.id, session.userId),
   });
 
-  if (!user || user.mkS || user.puK || user.prK || user.prKIv) {
+  if (user!.mkS || user!.puK || user!.prK || user!.prKIv) {
+    console.log("Redirecting password-set server");
     return redirect("/dash");
   }
-  return json({ userId: user.id });
+  return json({ userId: user!.id });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -57,7 +58,7 @@ export async function action({ request }: ActionFunctionArgs) {
     throw new Error("Something went wrong. Please try again.");
   }
   const user = await sqlite.query.users.findFirst({
-    where: (u, { eq }) => eq(u.id, session.userId)
+    where: (u, { eq }) => eq(u.id, session.userId),
   });
 
   if (!user || user.mkS || user.puK || user.prK || user.prKIv) {
@@ -70,11 +71,11 @@ export async function action({ request }: ActionFunctionArgs) {
       mkS,
       puK,
       prK,
-      prKIv
+      prKIv,
     })
     .where(eq(users.id, session.userId));
 
-  return json({ success: true });
+  return redirect("/dash");
 }
 
 export default function DashLayout() {
@@ -89,11 +90,6 @@ export default function DashLayout() {
   useEffect(() => {
     if (state === "idle") {
       setIsLoading(false);
-    }
-
-    if (state === "idle" && data?.success && mk) {
-      storeKey(mk, userId, userId);
-      redirect("/dash");
     }
   }, [state, data]);
 
@@ -121,7 +117,7 @@ export default function DashLayout() {
             mk,
             {
               name: "AES-GCM",
-              iv: prKIv
+              iv: prKIv,
             }
           );
           const prK = bufferToBase64(prKBuffer);
@@ -131,6 +127,7 @@ export default function DashLayout() {
           body.append("prK", prK);
           body.append("prKIv", arrayToBase64(prKIv));
           body.append("mkS", arrayToBase64(mkS));
+          await storeKey(mk, userId, userId);
           submit(body, { method: "POST" });
         }}
       >
@@ -346,7 +343,7 @@ export default function DashLayout() {
 export function ErrorBoundary() {
   const revalidator = useRevalidator();
   return (
-    <div className="m-auto mt-0 mt-4 max-w-md rounded border border-gray-200 p-8 md:mt-10">
+    <div className="m-auto mt-4 max-w-md rounded border border-gray-200 p-8 md:mt-10">
       <div className="pb-6">
         <div className="pb-4 text-center text-2xl font-bold tracking-tight">
           <span className="text-primary pointer-events-none">Snap</span>
