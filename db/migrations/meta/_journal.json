@@ -15,6 +15,13 @@
       "when": 1709396961874,
       "tag": "0001_broad_anthem",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1709755873390,
+      "tag": "0002_blushing_ricochet",
+      "breakpoints": true
     }
   ]
 }

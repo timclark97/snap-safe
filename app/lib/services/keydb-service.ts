@@ -72,6 +72,13 @@ export const getKey = async (keyId: string, userId: string) => {
   if (!keyData) {
     return;
   }
+
+  // Delete the key if it is older than 14 days
+  if (keyData.setOn < new Date(new Date().getDate() + 14).getTime()) {
+    await db.delete("ak", keyId);
+    return;
+  }
+
   const key = await crypto.subtle.unwrapKey(
     "raw",
     base64ToArray(keyData.data),
@@ -84,11 +91,6 @@ export const getKey = async (keyId: string, userId: string) => {
     true,
     ["encrypt", "decrypt"]
   );
-
-  // Delete the key if it is older than 14 days
-  if (keyData.setOn < new Date(new Date().getDate() + 14).getTime()) {
-    await db.delete("ak", keyId);
-  }
 
   return key;
 };

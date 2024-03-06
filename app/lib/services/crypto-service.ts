@@ -76,7 +76,7 @@ export const deriveMK = async (
       name: "PBKDF2",
       salt: saltArray,
       iterations: 210000,
-      hash: "SHA-512",
+      hash: "SHA-256",
     },
     wrappingKeyMaterial,
     { name: "AES-GCM", length: 256 },

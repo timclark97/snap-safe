@@ -4,11 +4,11 @@ import {
   json,
   redirect,
   useNavigation,
-  useActionData
+  useActionData,
 } from "@remix-run/react";
 
 import { requireSession, updateUser } from "@/lib/services";
-import { Button, Input } from "@/components/common";
+import { Button, Input, FormCard } from "@/components/common";
 
 export const meta: MetaFunction = () => {
   return [{ title: "SnapSafe | Welcome" }];
@@ -33,15 +33,7 @@ export default function DashLayout() {
   return (
     <div>
       <Form method="POST">
-        <div className="m-auto  mt-4 max-w-md rounded border-gray-200 p-8 md:mt-10 md:border">
-          <div className="pb-6">
-            <div className="pb-4 text-center text-2xl font-bold tracking-tight">
-              <span className="text-primary pointer-events-none">Snap</span>
-              <span className="text-secondary pointer-events-none">Safe</span>
-            </div>
-            <div className="text-center text-2xl">Create Your Account</div>
-            <div className="text-center text-gray-600">Enter your name</div>
-          </div>
+        <FormCard header="Create Your Account" subHeader="Enter your name">
           <fieldset disabled={state === "submitting"} className="grid gap-8">
             <Input
               required
@@ -59,7 +51,7 @@ export default function DashLayout() {
               Next
             </Button>
           </fieldset>
-        </div>
+        </FormCard>
       </Form>
     </div>
   );

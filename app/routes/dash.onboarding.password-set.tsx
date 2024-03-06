@@ -53,15 +53,25 @@ export async function action({ request }: ActionFunctionArgs) {
   const prK = body.get("prK") as string;
   const prKIv = body.get("prKIv") as string;
   const mkS = body.get("mkS") as string;
+  const mkT = body.get("mkT") as string;
+  const mkTIv = body.get("mkTIv") as string;
 
-  if (!puK || !prK || !prKIv || !mkS) {
+  if (!puK || !prK || !prKIv || !mkS || !mkT || !mkTIv) {
     throw new Error("Something went wrong. Please try again.");
   }
   const user = await sqlite.query.users.findFirst({
     where: (u, { eq }) => eq(u.id, session.userId),
   });
 
-  if (!user || user.mkS || user.puK || user.prK || user.prKIv) {
+  if (
+    !user ||
+    user.mkS ||
+    user.puK ||
+    user.prK ||
+    user.prKIv ||
+    user.mkT ||
+    user.mkTIv
+  ) {
     return redirect("/dash");
   }
 
@@ -72,6 +82,8 @@ export async function action({ request }: ActionFunctionArgs) {
       puK,
       prK,
       prKIv,
+      mkT,
+      mkTIv,
     })
     .where(eq(users.id, session.userId));
 
@@ -82,7 +94,6 @@ export default function DashLayout() {
   const [isLoading, setIsLoading] = useState(false);
   const [password1, setPassword1] = useState("");
   const [password2, setPassword2] = useState("");
-  const [mk, setMk] = useState<CryptoKey | null>(null);
 
   const { state, submit, data } = useFetcher<typeof action>();
   const { userId } = useLoaderData<typeof loader>();
@@ -104,7 +115,16 @@ export default function DashLayout() {
           fd.delete("password");
           const mkS = createSalt();
           const mk = await deriveMK(userId, pw, mkS);
-          setMk(mk);
+          const mkTIv = createIv();
+          const mkt = await window.crypto.subtle.encrypt(
+            {
+              name: "AES-GCM",
+              iv: mkTIv,
+            },
+            mk,
+            mkS
+          );
+
           const keyPair = await createKeyPair();
           const puK = await window.crypto.subtle.exportKey(
             "jwk",
@@ -127,6 +147,8 @@ export default function DashLayout() {
           body.append("prK", prK);
           body.append("prKIv", arrayToBase64(prKIv));
           body.append("mkS", arrayToBase64(mkS));
+          body.append("mkT", bufferToBase64(mkt));
+          body.append("mkTIv", arrayToBase64(mkTIv));
           await storeKey(mk, userId, userId);
           submit(body, { method: "POST" });
         }}

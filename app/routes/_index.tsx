@@ -1,3 +1,5 @@
-export default function Index() {
-  return <div className="bg-green-100"></div>;
+import { redirect } from "@remix-run/node";
+
+export async function loader() {
+  return redirect("/dash");
 }

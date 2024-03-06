@@ -18,7 +18,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function DashLayout() {
-  const [hasKey, setHasKey] = useState(false);
   const { user } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
 
@@ -30,10 +29,11 @@ export default function DashLayout() {
           "/dash/confirm-password",
           "/dash/onboarding/password",
           "/dash/onboarding/password-set",
+          "/dash/onboarding/name",
         ].includes(window.location.pathname)
       ) {
-        console.log("No key found, generating new key");
         navigate("/dash/confirm-password");
+        return;
       }
     });
   }, [user.id]);

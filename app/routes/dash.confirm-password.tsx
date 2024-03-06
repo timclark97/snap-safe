@@ -1,13 +1,14 @@
 import { useState } from "react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { useNavigate, useLoaderData } from "@remix-run/react";
 
 import { sqlite } from "@/lib/sqlite";
 import { requireSession } from "@/lib/services";
-import { Button, FormCard, Input } from "@/components/common";
+import { Button, FormCard, Input, Alert } from "@/components/common";
 import { deriveMK } from "@/lib/services/crypto-service";
 import { getKey, updateKey, storeKey } from "@/lib/services/keydb-service";
+import { base64ToArray } from "@/lib/helpers/binary-helper";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const session = await requireSession(request);
@@ -16,19 +17,27 @@ export async function loader({ request }: LoaderFunctionArgs) {
     columns: {
       id: true,
       mkS: true,
+      mkT: true,
+      mkTIv: true,
     },
   });
 
-  if (!user?.mkS) {
+  if (!user?.mkS || !user?.mkT || !user?.mkTIv) {
     return redirect("/dash/onboarding/password");
   }
-  return json({ userId: user!.id, mks: user!.mkS });
+  return json({
+    userId: user!.id,
+    mks: user!.mkS,
+    mkTIv: user!.mkTIv,
+    mkT: user!.mkT,
+  });
 }
 
 export default function ConfirmKey() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const data = useLoaderData<typeof loader>();
-  const fetcher = useFetcher();
+  const navigate = useNavigate();
   return (
     <div>
       <FormCard
@@ -37,19 +46,39 @@ export default function ConfirmKey() {
       >
         <form
           onSubmit={async (e) => {
-            console.log("submitting");
+            setLoading(true);
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
             const password = fd.get("password") as string;
-            const tmpKey = await getKey(data.userId, data.userId);
-            console.log("tmpKey", tmpKey);
-            const key = await deriveMK(data.userId, password, data.mks);
-            await storeKey(key, data.userId, data.userId);
+            const mk = await deriveMK(data.userId, password, data.mks);
+            try {
+              await window.crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: base64ToArray(data.mkTIv) },
+                mk,
+                base64ToArray(data.mkT)
+              );
+            } catch (e) {
+              setError("Wrong password");
+              setLoading(false);
+              return;
+            }
+            const currentKey = await getKey(data.userId, data.userId);
+            if (currentKey) {
+              await updateKey(mk, data.userId, data.userId);
+              return navigate("/dash");
+            }
+            await storeKey(mk, data.userId, data.userId);
+            navigate("/dash");
           }}
         >
-          <fieldset className="grid gap-6">
+          <fieldset className="grid gap-6" disabled={loading}>
+            <Alert variant="error" header="Uh Oh" dismissible>
+              {error}
+            </Alert>
             <Input name="password" label="Password" type="password" />
-            <Button type="submit">Continue</Button>
+            <Button type="submit" isLoading={loading}>
+              Continue
+            </Button>
           </fieldset>
         </form>
       </FormCard>
