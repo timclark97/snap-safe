@@ -3,7 +3,6 @@ import { openDB, DBSchema, IDBPDatabase } from "idb";
 import { bufferToBase64, base64ToArray } from "../helpers/binary-helper";
 import { getDbKey } from "./crypto-service";
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 interface KeyDB extends DBSchema {
   ak: {
     key: string;

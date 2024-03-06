@@ -6,8 +6,7 @@
   "scripts": {
     "build": "remix vite:build",
     "dev": "remix vite:dev",
-    "check:lint": "eslint .",
-    "check:styles": "prettier --check --config ../../.prettierrc --ignore-path ../../.prettierignore .",
+    "check:lint": "eslint",
     "check:types": "tsc",
     "db:check": "drizzle-kit check:sqlite",
     "db:generate": "drizzle-kit generate:sqlite",
