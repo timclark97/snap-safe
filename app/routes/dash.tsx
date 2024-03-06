@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Outlet, useLoaderData } from "@remix-run/react";
 import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
@@ -35,12 +35,17 @@ export default function DashLayout() {
         navigate("/dash/confirm-password");
         return;
       }
+      if (key && window.location.pathname === "/dash") {
+        navigate("/dash/home");
+      }
     });
   }, [user.id]);
   return (
     <div>
       <DashHeader user={user} />
-      <Outlet context={user} />
+      <div className="py-8 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Outlet context={user} />
+      </div>
     </div>
   );
 }

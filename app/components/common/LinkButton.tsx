@@ -17,7 +17,7 @@ export default function Button({
   const styles = `${colors[color]} ${sizes[size]} flex justify-center items-center rounded-md text-sm font-semibold relative disabled:cursor-not-allowed ${className}`;
 
   return (
-    <Link className={styles} {...props}>
+    <Link className={styles} {...props} prefetch="none">
       {children}
     </Link>
   );
