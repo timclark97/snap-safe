@@ -32,9 +32,42 @@ export const authMethods = sqliteTable("auth_methods", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  type: text("type").notNull(),
+  type: text("type", { enum: ["email", "google"] }).notNull(),
   value: text("value").notNull(),
 });
+
+export const authCodes = sqliteTable("authentication_codes", {
+  id: text("id").primaryKey().$default(generateId),
+  createdOn: integer("created_on", { mode: "timestamp_ms" })
+    .notNull()
+    .$default(() => new Date()),
+  expiresOn: integer("expires_on", { mode: "timestamp_ms" })
+    .notNull()
+    .$default(() => {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() + 15);
+      return d;
+    }),
+  metaData: text("meta_data", { mode: "json" })
+    .$type<{ email: string; type: "register" | "sign-in" }>()
+    .notNull(),
+});
+
+// export const invitations = sqliteTable("invitations", {
+//   id: text("id").primaryKey().$default(generateId),
+//   createdOn: integer("created_on", { mode: "timestamp_ms" })
+//     .notNull()
+//     .$default(() => new Date()),
+//   expiresOn: integer("expires_on", { mode: "timestamp_ms" })
+//     .notNull()
+//     .$default(() => {
+//       const d = new Date();
+//       d.setDate(d.getDate() + 14);
+//       return d;
+//     }),
+//   email: text("email").notNull(),
+//   code: text("code").notNull(),
+// });
 
 export const sessions = sqliteTable("sessions", {
   id: text("id").primaryKey().$default(generateId),

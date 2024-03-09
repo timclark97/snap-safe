@@ -1,13 +1,22 @@
-import { useLoaderData } from "@remix-run/react";
-import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { LockClosedIcon } from "@heroicons/react/24/solid";
+import { Form, useLoaderData } from "@remix-run/react";
+import type {
+  LoaderFunctionArgs,
+  MetaFunction,
+  ActionFunctionArgs,
+} from "@remix-run/node";
 import { redirect, json } from "@remix-run/node";
 
 import { getSessionId } from "@/lib/services/session-service";
 import SimpleHeader from "@/components/common/SimpleHeader";
-import { Alert, StyledLink } from "@/components/common";
+import {
+  Alert,
+  StyledLink,
+  Button,
+  Input,
+  FormCard,
+} from "@/components/common";
 import GoogleButton from "@/components/GoogleButton";
-import { generateAuthUrl } from "@/lib/oauth-providers/google";
+import { getAuthOptions } from "@/lib/services/auth-service";
 
 export const meta: MetaFunction = () => {
   return [{ title: "SnapSafe | Register" }];
@@ -23,35 +32,35 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .get("error_message")
     ?.toString();
 
-  return json({ googleAuthUrl: generateAuthUrl("register"), error });
+  return json({ options: getAuthOptions("register"), error });
 }
 
+// export async function action({ request }: ActionFunctionArgs) {}
+
 export default function Register() {
-  const { googleAuthUrl, error } = useLoaderData<typeof loader>();
+  const { options, error } = useLoaderData<typeof loader>();
 
   return (
     <div>
       <SimpleHeader />
-      <div className="m-auto max-w-md px-4 pt-10 md:px-8">
-        <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-8 lg:px-8">
-          <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-            <LockClosedIcon className="m-auto w-20 fill-indigo-600" />
-            <h2 className="mt-8 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-              Create your account
-            </h2>
-          </div>
+      <FormCard header="Create Your Account">
+        <div className="grid gap-6">
           <Alert variant="warning" dismissible>
             {error}
           </Alert>
-          <div className=" mt-4 sm:mx-auto sm:w-full sm:max-w-sm md:mt-10">
-            <GoogleButton url={googleAuthUrl} />
-            <p className=" mt-4 text-center text-sm text-gray-500 md:mt-10">
-              Already have an account?{" "}
-              <StyledLink to="/sign-in">Sign in</StyledLink>
-            </p>
-          </div>
+          {options.email.on && (
+            <Form method="POST" className="grid gap-4">
+              <Input name="email" autoComplete="email" label="Email" />
+              <Button>Continue with Email</Button>
+            </Form>
+          )}
+          {options.google.on && <GoogleButton url={options.google.url} />}
+          <p className="text-center text-sm text-gray-500 md:mt-10">
+            Already have an account?{" "}
+            <StyledLink to="/sign-in">Sign in</StyledLink>
+          </p>
         </div>
-      </div>
+      </FormCard>
     </div>
   );
 }

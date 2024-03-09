@@ -6,7 +6,7 @@ import { SessionUser } from "@/lib/services";
 export default function DashHome() {
   const user = useOutletContext<SessionUser>();
   return (
-    <div className="">
+    <div className="py-8 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="text-xl font-semibold">Welcome {user.firstName}</div>
       <LinkButton to="/dash/album/create">Create an album</LinkButton>
     </div>

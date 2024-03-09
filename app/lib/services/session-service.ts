@@ -9,18 +9,13 @@ const sessionCookie = createCookie("s_id", {
   httpOnly: true,
   sameSite: "strict",
   secure: true,
-  path: "/"
+  path: "/",
 });
 
 /**
  * This returns the session id
  */
-export const getSessionId = async (
-  req?: Request
-): Promise<string | undefined> => {
-  if (!req) {
-    return undefined;
-  }
+export const getSessionId = async (req: Request) => {
   const id = (await sessionCookie.parse(
     req.headers.get("Cookie") ?? ""
   )) as string;
@@ -38,7 +33,7 @@ export const createSessionCookie = async (
   expires: number | Date
 ): Promise<string> => {
   return await sessionCookie.serialize(sessionId, {
-    expires: typeof expires === "number" ? new Date(expires) : expires
+    expires: typeof expires === "number" ? new Date(expires) : expires,
   });
 };
 
@@ -59,11 +54,10 @@ export const requireSession = async (request: Request): Promise<Session> => {
   const sessionId = await getSessionId(request);
   if (!sessionId) {
     console.log("no session id");
-    console.log(request.url);
     throw redirect("/sign-in", {
       headers: {
-        "Set-Cookie": await createSessionCookie("", new Date(0))
-      }
+        "Set-Cookie": await createSessionCookie("", new Date(0)),
+      },
     });
   }
   const session = await sqlite.query.sessions.findFirst({
@@ -71,7 +65,7 @@ export const requireSession = async (request: Request): Promise<Session> => {
     columns: {
       id: true,
       userId: true,
-      expiresOn: true
+      expiresOn: true,
     },
     with: {
       user: {
@@ -79,18 +73,18 @@ export const requireSession = async (request: Request): Promise<Session> => {
           id: true,
           createdOn: true,
           firstName: true,
-          lastName: true
-        }
-      }
-    }
+          lastName: true,
+        },
+      },
+    },
   });
 
   if (!session) {
     console.log("no session");
     throw redirect("/sign-in", {
       headers: {
-        "Set-Cookie": await createSessionCookie("", new Date(0))
-      }
+        "Set-Cookie": await createSessionCookie("", new Date(0)),
+      },
     });
   }
 
@@ -99,14 +93,14 @@ export const requireSession = async (request: Request): Promise<Session> => {
     await deleteSession(session.id);
     throw redirect("/sign-in?error_message=Session%20expired", {
       headers: {
-        "Set-Cookie": await createSessionCookie("", new Date(0))
-      }
+        "Set-Cookie": await createSessionCookie("", new Date(0)),
+      },
     });
   }
 
   return {
     ...session,
-    user: serializeUser(session.user)
+    user: serializeUser(session.user),
   };
 };
 

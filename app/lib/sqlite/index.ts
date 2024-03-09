@@ -9,8 +9,8 @@ if (!process.env.DB_URL || !process.env.DB_TOKEN) {
 
 const client = createClient({
   url: process.env.DB_URL,
-  authToken: process.env.DB_TOKEN
+  authToken: process.env.DB_TOKEN,
 });
 export const sqlite = drizzle(client, { schema });
-export { users, authMethods, sessions } from "./schema";
+export { users, authMethods, sessions, authCodes } from "./schema";
 export type { DBUser } from "./schema";
