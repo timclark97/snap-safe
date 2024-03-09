@@ -20,7 +20,7 @@ export const users = sqliteTable("users", {
   mkTIv: text("mk_t_iv"),
   puK: text("pu_k"),
   prK: text("pr_k"),
-  prKIv: text("pr_k_iv"),
+  prKIv: text("pr_k_iv")
 });
 export type DBUser = typeof users.$inferSelect;
 
@@ -33,7 +33,7 @@ export const authMethods = sqliteTable("auth_methods", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   type: text("type", { enum: ["email", "google"] }).notNull(),
-  value: text("value").notNull(),
+  value: text("value").notNull()
 });
 
 export const authCodes = sqliteTable("authentication_codes", {
@@ -50,7 +50,7 @@ export const authCodes = sqliteTable("authentication_codes", {
     }),
   metaData: text("meta_data", { mode: "json" })
     .$type<{ email: string; type: "register" | "sign-in" }>()
-    .notNull(),
+    .notNull()
 });
 
 // export const invitations = sqliteTable("invitations", {
@@ -83,7 +83,7 @@ export const sessions = sqliteTable("sessions", {
       const d = new Date();
       d.setDate(d.getDate() + 14);
       return d;
-    }),
+    })
 });
 
 // Relations
@@ -91,19 +91,19 @@ export const sessions = sqliteTable("sessions", {
 //
 export const userRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
-  authMethods: many(authMethods),
+  authMethods: many(authMethods)
 }));
 
 export const sessionRelations = relations(sessions, ({ one }) => ({
   user: one(users, {
     fields: [sessions.userId],
-    references: [users.id],
-  }),
+    references: [users.id]
+  })
 }));
 
 export const authMethodRelations = relations(authMethods, ({ one }) => ({
   user: one(users, {
     fields: [authMethods.userId],
-    references: [users.id],
-  }),
+    references: [users.id]
+  })
 }));

@@ -9,7 +9,7 @@ import {
   StyledLink,
   FormCard,
   Input,
-  Button,
+  Button
 } from "@/components/common";
 import GoogleButton from "@/components/GoogleButton";
 import { getAuthOptions } from "@/lib/services/auth-service";

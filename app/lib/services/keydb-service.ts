@@ -22,7 +22,7 @@ const getDB = async () => {
   keyDb = await openDB<KeyDB>("kdb", 1, {
     upgrade(db) {
       db.createObjectStore("ak");
-    },
+    }
   });
   return keyDb;
 };
@@ -36,7 +36,7 @@ export const storeKey = async (
   const dbKey = await getDbKey(userId);
   const keyData = await crypto.subtle.wrapKey("raw", key, dbKey, {
     name: "AES-GCM",
-    iv: new TextEncoder().encode(keyId + userId),
+    iv: new TextEncoder().encode(keyId + userId)
   });
 
   await db.add(
@@ -55,7 +55,7 @@ export const updateKey = async (
   const dbKey = await getDbKey(userId);
   const keyData = await crypto.subtle.wrapKey("raw", key, dbKey, {
     name: "AES-GCM",
-    iv: new TextEncoder().encode(keyId + userId),
+    iv: new TextEncoder().encode(keyId + userId)
   });
 
   await db.put(
@@ -85,7 +85,7 @@ export const getKey = async (keyId: string, userId: string) => {
     dbKey,
     {
       name: "AES-GCM",
-      iv: new TextEncoder().encode(keyId + userId),
+      iv: new TextEncoder().encode(keyId + userId)
     },
     { name: "AES-GCM" },
     true,

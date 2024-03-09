@@ -1,7 +1,7 @@
 export default function FormCard({
   children,
   header,
-  subHeader,
+  subHeader
 }: {
   children: React.ReactNode;
   header: string;

@@ -14,16 +14,16 @@ const transport = createTransport({
   port: Number.parseInt(process.env.SMTP_PORT),
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    pass: process.env.SMTP_PASS
   },
   logger: process.env.SMTP_DEBUG === "on",
-  debug: process.env.SMTP_DEBUG === "on",
+  debug: process.env.SMTP_DEBUG === "on"
 });
 
 export const sendEmail = async ({
   to,
   subject,
-  text,
+  text
 }: {
   to: string;
   subject: string;
@@ -33,6 +33,6 @@ export const sendEmail = async ({
     from: "no-reply@snapsafe.app",
     to,
     subject,
-    text,
+    text
   });
 };

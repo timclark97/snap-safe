@@ -9,23 +9,23 @@ export const getAuthOptions = (state: string) => {
   const authObject = {
     google: {
       on: false,
-      url: "",
+      url: ""
     },
     email: {
-      on: false,
-    },
+      on: false
+    }
   };
 
   if (process.env.GOOGLE_AUTH === "on") {
     authObject.google = {
       on: true,
-      url: generateAuthUrl(state),
+      url: generateAuthUrl(state)
     };
   }
 
   if (process.env.EMAIL_AUTH === "on") {
     authObject.email = {
-      on: true,
+      on: true
     };
   }
 
@@ -38,7 +38,7 @@ export const emailRegisterStart = async (email: string) => {
     throw new Error("Invalid email");
   }
   const authMethod = await sqlite.query.authMethods.findFirst({
-    where: (am, { eq, and }) => and(eq(am.type, "email"), eq(am.value, email)),
+    where: (am, { eq, and }) => and(eq(am.type, "email"), eq(am.value, email))
   });
   if (authMethod) {
     throw new Error("Email already registered");
@@ -46,7 +46,7 @@ export const emailRegisterStart = async (email: string) => {
   const authCode = await sqlite
     .insert(authCodes)
     .values({
-      metaData: { email, type: "register" },
+      metaData: { email, type: "register" }
     })
     .returning()
     .execute();
@@ -54,13 +54,13 @@ export const emailRegisterStart = async (email: string) => {
   await sendEmail({
     to: email,
     subject: "SnapSafe Registration",
-    text: `Click the link to complete your SnapSafe registration: ${process.env.SITE_URL}/register?code=${authCode[0].id}`,
+    text: `Click the link to complete your SnapSafe registration: ${process.env.SITE_URL}/register?code=${authCode[0].id}`
   });
 };
 
 export const emailRegisterFinish = async (code: string) => {
   const authCode = await sqlite.query.authCodes.findFirst({
-    where: (ac, { eq }) => eq(ac.id, code),
+    where: (ac, { eq }) => eq(ac.id, code)
   });
   if (!authCode) {
     throw new Error("Invalid code");
@@ -72,7 +72,7 @@ export const emailRegisterFinish = async (code: string) => {
   }
 
   const authMethod = await sqlite.query.authMethods.findFirst({
-    where: (am, { eq, and }) => and(eq(am.type, "email"), eq(am.value, email)),
+    where: (am, { eq, and }) => and(eq(am.type, "email"), eq(am.value, email))
   });
   if (authMethod) {
     throw new Error("Email already registered");
@@ -86,7 +86,7 @@ export const emailRegisterFinish = async (code: string) => {
       .values({
         userId: user.id,
         type: "email",
-        value: email,
+        value: email
       })
       .execute();
 
@@ -104,7 +104,7 @@ export const emailSignInStart = async (email: string) => {
     throw new Error("Invalid email");
   }
   const authMethod = await sqlite.query.authMethods.findFirst({
-    where: (am, { eq, and }) => and(eq(am.type, "email"), eq(am.value, email)),
+    where: (am, { eq, and }) => and(eq(am.type, "email"), eq(am.value, email))
   });
   if (!authMethod) {
     throw new Error("Email not registered");
@@ -112,7 +112,7 @@ export const emailSignInStart = async (email: string) => {
   const authCode = await sqlite
     .insert(authCodes)
     .values({
-      metaData: { email, type: "sign-in" },
+      metaData: { email, type: "sign-in" }
     })
     .returning()
     .execute();
@@ -120,13 +120,13 @@ export const emailSignInStart = async (email: string) => {
   await sendEmail({
     to: email,
     subject: "SnapSafe Sign In",
-    text: `Click the link to sign in to SnapSafe: ${process.env.SITE_URL}/sign-in?code=${authCode[0].id}`,
+    text: `Click the link to sign in to SnapSafe: ${process.env.SITE_URL}/sign-in?code=${authCode[0].id}`
   });
 };
 
 export const emailSignInFinish = async (code: string) => {
   const authCode = await sqlite.query.authCodes.findFirst({
-    where: (ac, { eq }) => eq(ac.id, code),
+    where: (ac, { eq }) => eq(ac.id, code)
   });
   if (!authCode) {
     throw new Error("Invalid code");
@@ -139,7 +139,7 @@ export const emailSignInFinish = async (code: string) => {
 
   const authMethod = await sqlite.query.authMethods.findFirst({
     where: (am, { eq, and }) => and(eq(am.type, "email"), eq(am.value, email)),
-    with: { user: true },
+    with: { user: true }
   });
   if (!authMethod || !authMethod.user) {
     throw new Error("Email not registered");
@@ -152,7 +152,7 @@ export const emailSignInFinish = async (code: string) => {
 
 export const googleRegister = async (sub: string, email?: string) => {
   const authMethod = await sqlite.query.authMethods.findFirst({
-    where: (am, { eq, and }) => and(eq(am.type, "google"), eq(am.value, sub)),
+    where: (am, { eq, and }) => and(eq(am.type, "google"), eq(am.value, sub))
   });
   if (authMethod) {
     throw new Error("Google account already registered");
@@ -165,14 +165,14 @@ export const googleRegister = async (sub: string, email?: string) => {
       {
         userId: user.id,
         type: "google",
-        value: sub,
-      },
+        value: sub
+      }
     ];
     if (email) {
       methods.push({
         userId: user.id,
         type: "email",
-        value: email,
+        value: email
       });
     }
     await trx.insert(authMethods).values(methods).execute();
@@ -186,7 +186,7 @@ export const googleRegister = async (sub: string, email?: string) => {
 export const googleSignIn = async (sub: string) => {
   const authMethod = await sqlite.query.authMethods.findFirst({
     where: (am, { eq, and }) => and(eq(am.type, "google"), eq(am.value, sub)),
-    with: { user: true },
+    with: { user: true }
   });
   if (!authMethod || !authMethod.user) {
     throw new Error("Google account not registered");

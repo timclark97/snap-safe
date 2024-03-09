@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import type {
   ActionFunctionArgs,
   LoaderFunctionArgs,
-  MetaFunction,
+  MetaFunction
 } from "@remix-run/node";
 import { redirect, json } from "@remix-run/node";
 import { useFetcher, useLoaderData, useRevalidator } from "@remix-run/react";
@@ -13,7 +13,7 @@ import {
   hasNumber,
   hasSymbol,
   hasUpperCase,
-  isSecurePassword,
+  isSecurePassword
 } from "@/lib/helpers/password-helper";
 import { sqlite, users } from "@/lib/sqlite";
 import { bufferToBase64, arrayToBase64 } from "@/lib/helpers/binary-helper";
@@ -21,7 +21,7 @@ import {
   deriveMK,
   createKeyPair,
   createSalt,
-  createIv,
+  createIv
 } from "@/lib/services/crypto-service";
 import { requireSession } from "@/lib/services";
 import { Button, Input, Alert } from "@/components/common";
@@ -35,7 +35,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const session = await requireSession(request);
 
   const user = await sqlite.query.users.findFirst({
-    where: (u, { eq }) => eq(u.id, session.userId),
+    where: (u, { eq }) => eq(u.id, session.userId)
   });
 
   if (user!.mkS || user!.puK || user!.prK || user!.prKIv) {
@@ -60,7 +60,7 @@ export async function action({ request }: ActionFunctionArgs) {
     throw new Error("Something went wrong. Please try again.");
   }
   const user = await sqlite.query.users.findFirst({
-    where: (u, { eq }) => eq(u.id, session.userId),
+    where: (u, { eq }) => eq(u.id, session.userId)
   });
 
   if (
@@ -83,7 +83,7 @@ export async function action({ request }: ActionFunctionArgs) {
       prK,
       prKIv,
       mkT,
-      mkTIv,
+      mkTIv
     })
     .where(eq(users.id, session.userId));
 
@@ -119,7 +119,7 @@ export default function DashLayout() {
           const mkt = await window.crypto.subtle.encrypt(
             {
               name: "AES-GCM",
-              iv: mkTIv,
+              iv: mkTIv
             },
             mk,
             mkS
@@ -137,7 +137,7 @@ export default function DashLayout() {
             mk,
             {
               name: "AES-GCM",
-              iv: prKIv,
+              iv: prKIv
             }
           );
           const prK = bufferToBase64(prKBuffer);

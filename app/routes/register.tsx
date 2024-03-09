@@ -2,7 +2,7 @@ import { Form, useLoaderData } from "@remix-run/react";
 import type {
   LoaderFunctionArgs,
   MetaFunction,
-  ActionFunctionArgs,
+  ActionFunctionArgs
 } from "@remix-run/node";
 import { redirect, json } from "@remix-run/node";
 
@@ -13,7 +13,7 @@ import {
   StyledLink,
   Button,
   Input,
-  FormCard,
+  FormCard
 } from "@/components/common";
 import GoogleButton from "@/components/GoogleButton";
 import { getAuthOptions } from "@/lib/services/auth-service";

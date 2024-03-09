@@ -3,7 +3,7 @@ import { LoaderFunctionArgs, redirect, json } from "@remix-run/node";
 import {
   useRouteError,
   isRouteErrorResponse,
-  useLoaderData,
+  useLoaderData
 } from "@remix-run/react";
 
 import { getDataFromCallback } from "@/lib/oauth-providers/google";
@@ -11,7 +11,7 @@ import { sqlite, sessions } from "@/lib/sqlite";
 import { googleRegister, googleSignIn } from "@/lib/services/auth-service";
 import {
   createSessionCookie,
-  getSessionId,
+  getSessionId
 } from "@/lib/services/session-service";
 import { Alert, StyledLink } from "@/components/common";
 import SimpleHeader from "@/components/common/SimpleHeader";
@@ -36,8 +36,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       { sendTo: "/dash/onboarding/name" },
       {
         headers: {
-          "Set-Cookie": await createSessionCookie(id, expiresOn),
-        },
+          "Set-Cookie": await createSessionCookie(id, expiresOn)
+        }
       }
     );
   }
@@ -47,7 +47,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const [{ id, expiresOn }] = await sqlite
       .insert(sessions)
       .values({
-        userId: user.id,
+        userId: user.id
       })
       .returning()
       .execute();
@@ -83,8 +83,8 @@ export function ErrorBoundary() {
     error instanceof Error
       ? error.message
       : isRouteErrorResponse(error)
-      ? error.data
-      : "An error occurred";
+        ? error.data
+        : "An error occurred";
   return (
     <div>
       <SimpleHeader />

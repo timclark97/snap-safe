@@ -18,8 +18,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       id: true,
       mkS: true,
       mkT: true,
-      mkTIv: true,
-    },
+      mkTIv: true
+    }
   });
 
   if (!user?.mkS || !user?.mkT || !user?.mkTIv) {
@@ -29,7 +29,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     userId: user!.id,
     mks: user!.mkS,
     mkTIv: user!.mkTIv,
-    mkT: user!.mkT,
+    mkT: user!.mkT
   });
 }
 

@@ -29,7 +29,7 @@ export default function DashLayout() {
           "/dash/confirm-password",
           "/dash/onboarding/password",
           "/dash/onboarding/password-set",
-          "/dash/onboarding/name",
+          "/dash/onboarding/name"
         ].includes(window.location.pathname)
       ) {
         navigate("/dash/confirm-password");

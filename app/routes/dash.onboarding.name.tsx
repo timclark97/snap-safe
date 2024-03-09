@@ -4,7 +4,7 @@ import {
   json,
   redirect,
   useNavigation,
-  useActionData,
+  useActionData
 } from "@remix-run/react";
 
 import { requireSession, updateUser } from "@/lib/services";
