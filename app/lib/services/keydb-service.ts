@@ -1,6 +1,6 @@
 import { openDB, DBSchema, IDBPDatabase } from "idb";
 
-import { bufferToBase64, base64ToArray } from "../helpers/binary-helper";
+import { bufferToBase64, base64ToArray } from "../helpers/binary-helpers";
 import { getDbKey } from "./crypto-service";
 
 interface KeyDB extends DBSchema {

@@ -1,10 +1,6 @@
 import { useEffect } from "react";
 import { LoaderFunctionArgs, redirect, json } from "@remix-run/node";
-import {
-  useRouteError,
-  isRouteErrorResponse,
-  useLoaderData
-} from "@remix-run/react";
+import { useRouteError, useLoaderData } from "@remix-run/react";
 
 import { getDataFromCallback } from "@/lib/oauth-providers/google";
 import { sqlite, sessions } from "@/lib/sqlite";
@@ -15,6 +11,7 @@ import {
 } from "@/lib/services/session-service";
 import { Alert, StyledLink } from "@/components/common";
 import SimpleHeader from "@/components/common/SimpleHeader";
+import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const sessionId = await getSessionId(request);
@@ -79,12 +76,7 @@ export default function GoogleCallback() {
 
 export function ErrorBoundary() {
   const error = useRouteError();
-  const errorMessage =
-    error instanceof Error
-      ? error.message
-      : isRouteErrorResponse(error)
-        ? error.data
-        : "An error occurred";
+  const errorMessage = getErrorBoundaryMessage(error);
   return (
     <div>
       <SimpleHeader />

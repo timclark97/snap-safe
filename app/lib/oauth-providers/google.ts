@@ -1,9 +1,10 @@
 import { OAuth2Client } from "google-auth-library";
 
 if (
-  !process.env.GOOGLE_CLIENT_ID ||
-  !process.env.GOOGLE_CLIENT_SECRET ||
-  !process.env.GOOGLE_REDIRECT_URI
+  process.env.GOOGLE_AUTH === "on" &&
+  (!process.env.GOOGLE_CLIENT_ID ||
+    !process.env.GOOGLE_CLIENT_SECRET ||
+    !process.env.GOOGLE_REDIRECT_URI)
 ) {
   throw new Error(
     "Missing GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, or GOOGLE_REDIRECT_URI"

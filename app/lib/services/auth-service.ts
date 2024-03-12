@@ -54,7 +54,7 @@ export const emailRegisterStart = async (email: string) => {
   await sendEmail({
     to: email,
     subject: "SnapSafe Registration",
-    text: `Click the link to complete your SnapSafe registration: ${process.env.SITE_URL}/register?code=${authCode[0].id}`
+    text: `Click the link to complete your SnapSafe registration: ${process.env.SITE_URL}/email-callback?code=${authCode[0].id}&type=register`
   });
 };
 
@@ -90,7 +90,7 @@ export const emailRegisterFinish = async (code: string) => {
       })
       .execute();
 
-    await sqlite.delete(authCodes).where(eq(authCodes.id, code)).execute();
+    await trx.delete(authCodes).where(eq(authCodes.id, code)).execute();
 
     return user;
   });
@@ -120,7 +120,7 @@ export const emailSignInStart = async (email: string) => {
   await sendEmail({
     to: email,
     subject: "SnapSafe Sign In",
-    text: `Click the link to sign in to SnapSafe: ${process.env.SITE_URL}/sign-in?code=${authCode[0].id}`
+    text: `Click the link to sign in to SnapSafe: ${process.env.SITE_URL}/email-callback?code=${authCode[0].id}&type=sign-in`
   });
 };
 

@@ -1,5 +1,5 @@
 /* eslint-disable import/exports-last */
-import { base64ToArray } from "@/lib/helpers/binary-helper";
+import { base64ToArray } from "@/lib/helpers/binary-helpers";
 
 type SaltType = ArrayBuffer | Uint8Array | string;
 

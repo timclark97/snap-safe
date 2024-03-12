@@ -6,7 +6,7 @@ import type {
   MetaFunction
 } from "@remix-run/node";
 import { redirect, json } from "@remix-run/node";
-import { useFetcher, useLoaderData, useRevalidator } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 
 import {
   hasLength,
@@ -14,9 +14,9 @@ import {
   hasSymbol,
   hasUpperCase,
   isSecurePassword
-} from "@/lib/helpers/password-helper";
+} from "@/lib/helpers/password-helpers";
 import { sqlite, users } from "@/lib/sqlite";
-import { bufferToBase64, arrayToBase64 } from "@/lib/helpers/binary-helper";
+import { bufferToBase64, arrayToBase64 } from "@/lib/helpers/binary-helpers";
 import {
   deriveMK,
   createKeyPair,
@@ -363,7 +363,6 @@ export default function DashLayout() {
 }
 
 export function ErrorBoundary() {
-  const revalidator = useRevalidator();
   return (
     <div className="m-auto mt-4 max-w-md rounded border border-gray-200 p-8 md:mt-10">
       <div className="pb-6">
@@ -375,14 +374,8 @@ export function ErrorBoundary() {
         <div className="text-center text-gray-600">Enter your name</div>
       </div>
 
-      <Alert variant="error" header="Something went wrong">
+      <Alert variant="error" header="Something went wrong" revalidateable>
         <div>Something went wrong. Please try again.</div>
-        <button
-          className="font-semibold underline"
-          onClick={() => revalidator.revalidate()}
-        >
-          Try Again
-        </button>
       </Alert>
     </div>
   );

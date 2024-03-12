@@ -5,6 +5,7 @@ import {
   CheckCircleIcon,
   XMarkIcon
 } from "@heroicons/react/20/solid";
+import { useRevalidator } from "@remix-run/react";
 
 const variants = {
   error: {
@@ -34,13 +35,16 @@ export default function Alert({
   variant = "success",
   header,
   dismissible = false,
+  revalidateable,
   children
 }: {
   variant?: keyof typeof variants;
   header?: string;
   dismissible?: boolean;
+  revalidateable?: boolean;
   children: React.ReactNode;
 }) {
+  const revalidator = useRevalidator();
   const [isOpen, setIsOpen] = useState(true);
   const { bg, icon: Icon, iconColor, text, defaultHeader } = variants[variant];
 
@@ -63,6 +67,14 @@ export default function Alert({
         <div className={`ml-3 ${text}`}>
           <h3 className="text-sm font-medium">{header ?? defaultHeader}</h3>
           <div className="mt-2 text-sm">{children}</div>
+          {revalidateable && (
+            <button
+              className="font-semibold underline text-sm"
+              onClick={() => revalidator.revalidate()}
+            >
+              Try Again
+            </button>
+          )}
         </div>
       </div>
     </div>

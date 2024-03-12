@@ -8,7 +8,7 @@ import { requireSession } from "@/lib/services";
 import { Button, FormCard, Input, Alert } from "@/components/common";
 import { deriveMK } from "@/lib/services/crypto-service";
 import { getKey, updateKey, storeKey } from "@/lib/services/keydb-service";
-import { base64ToArray } from "@/lib/helpers/binary-helper";
+import { base64ToArray } from "@/lib/helpers/binary-helpers";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const session = await requireSession(request);
