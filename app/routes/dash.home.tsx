@@ -1,7 +1,7 @@
 import { useOutletContext } from "@remix-run/react";
 
 import { LinkButton } from "@/components/common";
-import { SessionUser } from "@/lib/services";
+import { SessionUser } from "@/lib/services/session-service";
 
 export default function DashHome() {
   const user = useOutletContext<SessionUser>();

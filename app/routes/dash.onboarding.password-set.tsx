@@ -23,7 +23,7 @@ import {
   createSalt,
   createIv
 } from "@/lib/services/crypto-service";
-import { requireSession } from "@/lib/services";
+import { requireSession } from "@/lib/services/session-service";
 import { Button, Input, Alert } from "@/components/common";
 import { storeKey } from "@/lib/services/keydb-service";
 

@@ -7,7 +7,8 @@ import {
   useActionData
 } from "@remix-run/react";
 
-import { requireSession, updateUser } from "@/lib/services";
+import { requireSession } from "@/lib/services/session-service";
+import { updateUser } from "@/lib/services/user-service";
 import { Button, Input, FormCard } from "@/components/common";
 
 export const meta: MetaFunction = () => {

@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-throw-literal */
 import { createCookie, redirect } from "@remix-run/node";
 import { eq } from "drizzle-orm";
 
 import { sessions, sqlite } from "@/lib/sqlite";
-import { serializeUser } from ".";
+import { serializeUser } from "./user-service";
 
 const sessionCookie = createCookie("s_id", {
   httpOnly: true,

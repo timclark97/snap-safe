@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { UserIcon } from "@heroicons/react/24/solid";
 import { Menu, Transition } from "@headlessui/react";
 
-import { SessionUser } from "@/lib/services";
+import { SessionUser } from "@/lib/services/session-service";
 
 export default function DashHeader({ user }: { user: SessionUser }) {
   return (

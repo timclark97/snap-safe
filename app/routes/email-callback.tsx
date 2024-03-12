@@ -7,7 +7,7 @@ import {
   emailSignInFinish
 } from "@/lib/services/auth-service";
 import { sqlite, sessions } from "@/lib/sqlite";
-import { createSessionCookie } from "@/lib/services";
+import { createSessionCookie } from "@/lib/services/session-service";
 import { Alert, StyledLink } from "@/components/common";
 import SimpleHeader from "@/components/common/SimpleHeader";
 import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";

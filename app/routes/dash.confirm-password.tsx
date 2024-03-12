@@ -4,7 +4,7 @@ import { json, redirect } from "@remix-run/node";
 import { useNavigate, useLoaderData } from "@remix-run/react";
 
 import { sqlite } from "@/lib/sqlite";
-import { requireSession } from "@/lib/services";
+import { requireSession } from "@/lib/services/session-service";
 import { Button, FormCard, Input, Alert } from "@/components/common";
 import { deriveMK } from "@/lib/services/crypto-service";
 import { getKey, updateKey, storeKey } from "@/lib/services/keydb-service";

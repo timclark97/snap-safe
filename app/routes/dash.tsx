@@ -4,7 +4,7 @@ import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useNavigate } from "@remix-run/react";
 
-import { requireSession } from "@/lib/services";
+import { requireSession } from "@/lib/services/session-service";
 import { DashHeader } from "@/components/common";
 import { getKey } from "@/lib/services/keydb-service";
 

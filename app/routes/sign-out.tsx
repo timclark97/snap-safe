@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 
-import { getSessionId, deleteSession } from "@/lib/services";
+import { getSessionId, deleteSession } from "@/lib/services/session-service";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const sessionId = await getSessionId(request);
