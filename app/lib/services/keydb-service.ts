@@ -89,7 +89,7 @@ export const getKey = async (keyId: string, userId: string) => {
     },
     { name: "AES-GCM" },
     true,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
   );
 
   return key;

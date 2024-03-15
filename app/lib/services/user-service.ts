@@ -1,11 +1,14 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 
-import { sqlite, users, DBUser } from "../sqlite";
+import { sqlite, users } from "../sqlite";
 
-export const serializeUser = (
-  user: Pick<DBUser, "id" | "createdOn" | "firstName" | "lastName">
-) => ({
+export const serializeUser = (user: {
+  id: string;
+  createdOn: Date;
+  firstName: string;
+  lastName: string;
+}) => ({
   id: user.id,
   firstName: user.firstName,
   lastName: user.lastName,

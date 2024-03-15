@@ -22,7 +22,6 @@ export const users = sqliteTable("users", {
   prK: text("pr_k"),
   prKIv: text("pr_k_iv")
 });
-export type DBUser = typeof users.$inferSelect;
 
 export const authMethods = sqliteTable("auth_methods", {
   id: text("id").primaryKey().$default(generateId),
@@ -70,12 +69,75 @@ export const sessions = sqliteTable("sessions", {
     })
 });
 
+export const albums = sqliteTable("albums", {
+  id: text("id").primaryKey().$default(generateId),
+  createdOn: integer("created_on", { mode: "timestamp_ms" })
+    .notNull()
+    .$default(() => new Date()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description").notNull().default("")
+});
+
+export const albumKeys = sqliteTable("album_keys", {
+  id: text("id").primaryKey().$default(generateId),
+  createdOn: integer("created_on", { mode: "timestamp_ms" })
+    .notNull()
+    .$default(() => new Date()),
+  albumId: text("album_id")
+    .notNull()
+    .references(() => albums.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  key: text("key").notNull(),
+  iv: text("iv").notNull()
+});
+
+export const photos = sqliteTable("photos", {
+  id: text("id").primaryKey().$default(generateId),
+  createdOn: integer("created_on", { mode: "timestamp_ms" })
+    .notNull()
+    .$default(() => new Date()),
+  albumId: text("album_id")
+    .notNull()
+    .references(() => albums.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id)
+});
+
+export const albumPermissions = sqliteTable("album_permissions", {
+  id: text("id").primaryKey().$default(generateId),
+  createdOn: integer("created_on", { mode: "timestamp_ms" })
+    .notNull()
+    .$default(() => new Date()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  grantedBy: text("granted_by")
+    .notNull()
+    .references(() => users.id),
+  albumId: text("album_id")
+    .notNull()
+    .references(() => albums.id, { onDelete: "cascade" }),
+  permission: text("permission", {
+    enum: ["read", "write"]
+  }).notNull()
+});
+
 // Relations
 //
 //
 export const userRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
-  authMethods: many(authMethods)
+  authMethods: many(authMethods),
+  albums: many(albums),
+  albumKeys: many(albumKeys),
+  albumPermissions: many(albumPermissions, { relationName: "user" }),
+  albumPermissionsGranted: many(albumPermissions, { relationName: "grantedBy" })
 }));
 
 export const sessionRelations = relations(sessions, ({ one }) => ({
@@ -89,5 +151,56 @@ export const authMethodRelations = relations(authMethods, ({ one }) => ({
   user: one(users, {
     fields: [authMethods.userId],
     references: [users.id]
+  })
+}));
+
+export const albumRelations = relations(albums, ({ one, many }) => ({
+  user: one(users, {
+    fields: [albums.userId],
+    references: [users.id]
+  }),
+  photos: many(photos),
+  albumPermissions: many(albumPermissions)
+}));
+
+export const photoRelations = relations(photos, ({ one }) => ({
+  album: one(albums, {
+    fields: [photos.albumId],
+    references: [albums.id]
+  }),
+  user: one(users, {
+    fields: [photos.userId],
+    references: [users.id]
+  })
+}));
+
+export const albumPermissionRelations = relations(
+  albumPermissions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [albumPermissions.userId],
+      references: [users.id],
+      relationName: "user"
+    }),
+    grantedBy: one(users, {
+      fields: [albumPermissions.grantedBy],
+      references: [users.id],
+      relationName: "grantedBy"
+    }),
+    album: one(albums, {
+      fields: [albumPermissions.albumId],
+      references: [albums.id]
+    })
+  })
+);
+
+export const albumKeyRelations = relations(albumKeys, ({ one }) => ({
+  user: one(users, {
+    fields: [albumKeys.userId],
+    references: [users.id]
+  }),
+  album: one(albums, {
+    fields: [albumKeys.albumId],
+    references: [albums.id]
   })
 }));

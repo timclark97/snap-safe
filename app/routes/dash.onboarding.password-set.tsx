@@ -24,7 +24,7 @@ import {
   createIv
 } from "@/lib/services/crypto-service";
 import { requireSession } from "@/lib/services/session-service";
-import { Button, Input, Alert } from "@/components/common";
+import { Button, Input, Alert, FormCard } from "@/components/common";
 import { storeKey } from "@/lib/services/keydb-service";
 
 export const meta: MetaFunction = () => {
@@ -87,13 +87,14 @@ export async function action({ request }: ActionFunctionArgs) {
     })
     .where(eq(users.id, session.userId));
 
-  return redirect("/dash");
+  return redirect("/dash/home");
 }
 
-export default function DashLayout() {
+export default function SetPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [password1, setPassword1] = useState("");
   const [password2, setPassword2] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const { state, submit, data } = useFetcher<typeof action>();
   const { userId } = useLoaderData<typeof loader>();
@@ -106,63 +107,69 @@ export default function DashLayout() {
 
   return (
     <div>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setIsLoading(true);
-          const fd = new FormData(e.target as HTMLFormElement);
-          const pw = fd.get("password")?.toString() ?? "";
-          fd.delete("password");
-          const mkS = createSalt();
-          const mk = await deriveMK(userId, pw, mkS);
-          const mkTIv = createIv();
-          const mkt = await window.crypto.subtle.encrypt(
-            {
-              name: "AES-GCM",
-              iv: mkTIv
-            },
-            mk,
-            mkS
-          );
+      <FormCard header="Create Your Account" subHeader="Set Your Password">
+        <form
+          onSubmit={async (e) => {
+            try {
+              e.preventDefault();
+              setIsLoading(true);
+              const fd = new FormData(e.target as HTMLFormElement);
+              const pw = fd.get("password")?.toString() ?? "";
+              fd.delete("password");
+              const mkS = createSalt();
+              const mk = await deriveMK(userId, pw, mkS);
+              const mkTIv = createIv();
+              const mkt = await window.crypto.subtle.encrypt(
+                {
+                  name: "AES-GCM",
+                  iv: mkTIv
+                },
+                mk,
+                mkS
+              );
 
-          const keyPair = await createKeyPair();
-          const puK = await window.crypto.subtle.exportKey(
-            "jwk",
-            keyPair.publicKey
-          );
-          const prKIv = createIv();
-          const prKBuffer = await window.crypto.subtle.wrapKey(
-            "pkcs8",
-            keyPair.privateKey,
-            mk,
-            {
-              name: "AES-GCM",
-              iv: prKIv
+              const keyPair = await createKeyPair();
+              const puK = await window.crypto.subtle.exportKey(
+                "jwk",
+                keyPair.publicKey
+              );
+              const prKIv = createIv();
+              const prKBuffer = await window.crypto.subtle.wrapKey(
+                "pkcs8",
+                keyPair.privateKey,
+                mk,
+                {
+                  name: "AES-GCM",
+                  iv: prKIv
+                }
+              );
+              setIsLoading(false);
+              const prK = bufferToBase64(prKBuffer);
+              const body = new FormData();
+
+              body.append("puK", JSON.stringify(puK));
+              body.append("prK", prK);
+              body.append("prKIv", arrayToBase64(prKIv));
+              body.append("mkS", arrayToBase64(mkS));
+              body.append("mkT", bufferToBase64(mkt));
+              body.append("mkTIv", arrayToBase64(mkTIv));
+              await storeKey(mk, userId, userId);
+              submit(body, { method: "POST" });
+            } catch (e) {
+              console.error(e);
+              setIsLoading(false);
+              if (e instanceof Error) {
+                setError(e.message);
+                return;
+              }
+              setError("Something went wrong. Please try again.");
             }
-          );
-          const prK = bufferToBase64(prKBuffer);
-          const body = new FormData();
-
-          body.append("puK", JSON.stringify(puK));
-          body.append("prK", prK);
-          body.append("prKIv", arrayToBase64(prKIv));
-          body.append("mkS", arrayToBase64(mkS));
-          body.append("mkT", bufferToBase64(mkt));
-          body.append("mkTIv", arrayToBase64(mkTIv));
-          await storeKey(mk, userId, userId);
-          submit(body, { method: "POST" });
-        }}
-      >
-        <div className="m-auto mt-4 max-w-md rounded border-gray-200 p-8 md:mt-10 md:border">
-          <div className="pb-6">
-            <div className="pb-4 text-center text-2xl font-bold tracking-tight">
-              <span className="text-primary pointer-events-none">Snap</span>
-              <span className="text-secondary pointer-events-none">Safe</span>
-            </div>
-            <div className="text-center text-2xl">Create Your Account</div>
-            <div className="text-center text-gray-600">Set Your Password</div>
-          </div>
+          }}
+        >
           <fieldset disabled={isLoading} className="grid gap-8">
+            <Alert variant="error" dismissible>
+              {error}
+            </Alert>
             <Input
               required
               type="password"
@@ -356,8 +363,8 @@ export default function DashLayout() {
               Next
             </Button>
           </fieldset>
-        </div>
-      </form>
+        </form>
+      </FormCard>
     </div>
   );
 }

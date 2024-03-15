@@ -60,7 +60,7 @@ export const deriveMK = async (
     "raw",
     new TextEncoder().encode(password.trim().normalize() + userId),
     { name: "PBKDF2" },
-    true,
+    false,
     ["deriveKey", "deriveBits"]
   );
 
