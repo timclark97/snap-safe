@@ -18,5 +18,7 @@ export {
   sessions,
   authCodes,
   albumKeys,
-  albums
+  albums,
+  albumPermissions,
+  photos
 } from "./schema";

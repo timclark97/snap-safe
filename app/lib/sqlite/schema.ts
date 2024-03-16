@@ -124,7 +124,7 @@ export const albumPermissions = sqliteTable("album_permissions", {
     .notNull()
     .references(() => albums.id, { onDelete: "cascade" }),
   permission: text("permission", {
-    enum: ["read", "write"]
+    enum: ["read", "write", "owner"]
   }).notNull()
 });
 

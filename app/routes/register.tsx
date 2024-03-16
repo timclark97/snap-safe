@@ -57,25 +57,27 @@ export default function Register() {
     <div>
       <SimpleHeader />
       <FormCard header="Create Your Account">
-        {fetcher.data?.success ? (
-          <Alert variant="success">Check your email for a sign in link</Alert>
-        ) : (
-          <>
-            {options.email.on && (
-              <fetcher.Form method="POST" className="grid gap-4">
-                <Input
-                  name="email"
-                  autoComplete="email"
-                  label="Email"
-                  type="email"
-                />
-                <Button type="submit">Continue with Email</Button>
-              </fetcher.Form>
-            )}
-            {options.google.on && <GoogleButton url={options.google.url} />}
-          </>
-        )}
         <div className="grid gap-6">
+          {fetcher.data?.success ? (
+            <Alert variant="success">
+              Check your email for a link to continue
+            </Alert>
+          ) : (
+            <>
+              {options.email.on && (
+                <fetcher.Form method="POST" className="grid gap-4">
+                  <Input
+                    name="email"
+                    autoComplete="email"
+                    label="Email"
+                    type="email"
+                  />
+                  <Button type="submit">Continue with Email</Button>
+                </fetcher.Form>
+              )}
+              {options.google.on && <GoogleButton url={options.google.url} />}
+            </>
+          )}
           <Alert variant="warning" dismissible>
             {error}
           </Alert>

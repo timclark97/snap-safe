@@ -9,6 +9,7 @@ interface KeyDB extends DBSchema {
     value: {
       data: string;
       setOn: number;
+      usages: string[];
     };
   };
 }
@@ -41,7 +42,11 @@ export const storeKey = async (
 
   await db.add(
     "ak",
-    { data: bufferToBase64(keyData), setOn: new Date().getTime() },
+    {
+      data: bufferToBase64(keyData),
+      setOn: new Date().getTime(),
+      usages: key.usages
+    },
     keyId
   );
 };
@@ -60,7 +65,11 @@ export const updateKey = async (
 
   await db.put(
     "ak",
-    { data: bufferToBase64(keyData), setOn: new Date().getTime() },
+    {
+      data: bufferToBase64(keyData),
+      setOn: new Date().getTime(),
+      usages: key.usages
+    },
     keyId
   );
 };
@@ -89,8 +98,13 @@ export const getKey = async (keyId: string, userId: string) => {
     },
     { name: "AES-GCM" },
     true,
-    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
+    dbKey.usages
   );
 
   return key;
+};
+
+export const clearStore = async () => {
+  const db = await getDB();
+  await db.clear("ak");
 };

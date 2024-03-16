@@ -5,7 +5,7 @@ export const getErrorBoundaryMessage = (e: unknown) => {
     return e.message;
   }
   if (isRouteErrorResponse(e)) {
-    return e.data;
+    return e.data.message;
   }
   return "Something went wrong";
 };

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { type ActionFunctionArgs, json } from "@remix-run/node";
 import { useFetcher, useNavigate } from "@remix-run/react";
 
-import { sqlite, albumKeys, albums } from "@/lib/sqlite";
+import { sqlite, albumKeys, albums, albumPermissions } from "@/lib/sqlite";
 import { FormCard, Input, Button, Alert } from "@/components/common";
 import { createAlbumKey } from "@/lib/services/crypto-service";
 import { createIv } from "@/lib/services/crypto-service";
@@ -12,7 +12,7 @@ import { arrayToBase64, bufferToBase64 } from "@/lib/helpers/binary-helpers";
 import { requireSession } from "@/lib/services/session-service";
 
 export async function action({ request }: ActionFunctionArgs) {
-  const user = await requireSession(request);
+  const session = await requireSession(request);
 
   const body = await request.formData();
   const albumName = body.get("albumName") as string;
@@ -24,7 +24,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const [album] = await db
       .insert(albums)
       .values({
-        userId: user.id,
+        userId: session.userId,
         name: albumName,
         description: albumDescription
       })
@@ -34,12 +34,22 @@ export async function action({ request }: ActionFunctionArgs) {
     const [albumKey] = await db
       .insert(albumKeys)
       .values({
-        userId: user.id,
+        userId: session.userId,
         albumId: album.id,
         key,
         iv
       })
       .returning()
+      .execute();
+
+    await db
+      .insert(albumPermissions)
+      .values({
+        userId: session.userId,
+        albumId: album.id,
+        permission: "owner",
+        grantedBy: session.userId
+      })
       .execute();
 
     return { albumId: album.id, albumKeyId: albumKey.id };
@@ -64,9 +74,10 @@ export default function DashAlbumCreate() {
       fetcher.data.albumKeyId &&
       albumKey
     ) {
-      storeKey(albumKey, fetcher.data.albumId, id).then(() =>
-        navigate(`/dash/albums/${fetcher.data!.albumId}`)
-      );
+      storeKey(albumKey, fetcher.data.albumId, id).then(() => {
+        setAlbumKey(null);
+        navigate(`/dash/albums/${fetcher.data!.albumId}`);
+      });
     }
   }, [fetcher, albumKey]);
 

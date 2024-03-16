@@ -52,7 +52,6 @@ export type Session = {
 export const requireSession = async (request: Request): Promise<Session> => {
   const sessionId = await getSessionId(request);
   if (!sessionId) {
-    console.log("no session id");
     throw redirect("/sign-in", {
       headers: {
         "Set-Cookie": await createSessionCookie("", new Date(0))

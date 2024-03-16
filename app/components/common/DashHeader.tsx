@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import { UserIcon } from "@heroicons/react/24/solid";
 import { Menu, Transition } from "@headlessui/react";
+import { Link } from "@remix-run/react";
 
 import { SessionUser } from "@/lib/services/session-service";
 
@@ -8,10 +9,13 @@ export default function DashHeader({ user }: { user: SessionUser }) {
   return (
     <nav className="flex h-14 items-center justify-between border-b border-b-gray-200 bg-gray-50 px-4 md:px-8">
       <div className="relative grow-0">
-        <div className="z-1 pointer-events-none cursor-default bg-gray-50 text-xl font-bold tracking-tight md:text-2xl">
+        <Link
+          to="/dash/home"
+          className="z-1 bg-gray-50 text-xl font-bold tracking-tight md:text-2xl"
+        >
           <span className="text-primary pointer-events-none">Snap</span>
           <span className="text-secondary pointer-events-none">Safe</span>
-        </div>
+        </Link>
       </div>
       <Menu as="div" className="relative">
         <Menu.Button className="bg-primary flex size-9 items-center justify-center rounded-full border border-gray-300 font-bold text-white shadow">

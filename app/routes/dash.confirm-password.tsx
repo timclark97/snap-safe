@@ -42,7 +42,7 @@ export default function ConfirmKey() {
     <div>
       <FormCard
         header="Enter your password"
-        subHeader="You are required to re-enter your password every 2 weeks."
+        subHeader="You are required to re-enter your password every 2 weeks and every time you sign in"
       >
         <form
           onSubmit={async (e) => {
@@ -65,10 +65,10 @@ export default function ConfirmKey() {
             const currentKey = await getKey(data.userId, data.userId);
             if (currentKey) {
               await updateKey(mk, data.userId, data.userId);
-              return navigate("/dash");
+              return navigate("/dash/home");
             }
             await storeKey(mk, data.userId, data.userId);
-            navigate("/dash");
+            navigate("/dash/home");
           }}
         >
           <fieldset className="grid gap-6" disabled={loading}>
