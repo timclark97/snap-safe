@@ -1,4 +1,4 @@
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 import { type LoaderFunctionArgs, json } from "@remix-run/node";
 
 import { useSelf } from "@/lib/hooks/useSelf";
@@ -21,7 +21,7 @@ export default function DashHome() {
     <div className="">
       <div className="text-2xl font-semibold flex justify-between items-center">
         <div>Welcome {user.firstName}</div>
-        <LinkButton to="/dash/album/create">Create an album</LinkButton>
+        <LinkButton to="/dash/albums/create">Create an album</LinkButton>
       </div>
 
       <div className="py-4">

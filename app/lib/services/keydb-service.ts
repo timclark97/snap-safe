@@ -9,7 +9,7 @@ interface KeyDB extends DBSchema {
     value: {
       data: string;
       setOn: number;
-      usages: string[];
+      usages: KeyUsage[];
     };
   };
 }
@@ -87,21 +87,26 @@ export const getKey = async (keyId: string, userId: string) => {
     await db.delete("ak", keyId);
     return;
   }
-
-  const key = await crypto.subtle.unwrapKey(
-    "raw",
-    base64ToArray(keyData.data),
-    dbKey,
-    {
-      name: "AES-GCM",
-      iv: new TextEncoder().encode(keyId + userId)
-    },
-    { name: "AES-GCM" },
-    true,
-    dbKey.usages
-  );
-
-  return key;
+  try {
+    const key = await crypto.subtle.unwrapKey(
+      "raw",
+      base64ToArray(keyData.data),
+      dbKey,
+      {
+        name: "AES-GCM",
+        iv: new TextEncoder().encode(keyId + userId)
+      },
+      { name: "AES-GCM" },
+      true,
+      keyData.usages
+    );
+    return key;
+  } catch (e) {
+    if (e instanceof Error) {
+      console.error("Failed to unwrap key:", e.message);
+    }
+    console.error(e);
+  }
 };
 
 export const clearStore = async () => {

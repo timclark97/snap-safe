@@ -36,6 +36,13 @@
       "when": 1710535267196,
       "tag": "0004_far_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1710766583615,
+      "tag": "0005_silly_ultimo",
+      "breakpoints": true
     }
   ]
 }

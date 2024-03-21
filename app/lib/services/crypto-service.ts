@@ -22,15 +22,15 @@ export const getDbKey = async (userId: string) => {
   if (dbKey) {
     return dbKey;
   }
-  const wrappingKeyMaterial = await window.crypto.subtle.importKey(
+  const wrappingKeyMaterial = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(window.navigator.userAgent + userId),
+    new TextEncoder().encode(navigator.userAgent + userId),
     { name: "PBKDF2" },
     false,
     ["deriveKey", "deriveBits"]
   );
 
-  dbKey = await window.crypto.subtle.deriveKey(
+  dbKey = await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
       salt: new TextEncoder().encode(userId),
@@ -42,6 +42,10 @@ export const getDbKey = async (userId: string) => {
     true,
     ["unwrapKey", "wrapKey"]
   );
+
+  if (!dbKey) {
+    throw new Error("Failed to get dbKey not found");
+  }
   return dbKey;
 };
 
@@ -56,7 +60,7 @@ export const deriveMK = async (
   password: string,
   salt: SaltType
 ) => {
-  const wrappingKeyMaterial = await window.crypto.subtle.importKey(
+  const wrappingKeyMaterial = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(password.trim().normalize() + userId),
     { name: "PBKDF2" },
@@ -71,7 +75,7 @@ export const deriveMK = async (
     saltArray = salt;
   }
 
-  return await window.crypto.subtle.deriveKey(
+  return await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
       salt: saltArray,
@@ -86,7 +90,7 @@ export const deriveMK = async (
 };
 
 export const createKeyPair = async () => {
-  return await window.crypto.subtle.generateKey(
+  return await crypto.subtle.generateKey(
     {
       name: "RSA-OAEP",
       modulusLength: 4096,
@@ -94,7 +98,7 @@ export const createKeyPair = async () => {
       hash: "SHA-256"
     },
     true,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
   );
 };
 
@@ -119,15 +123,23 @@ export const importPubKey = async (keyData: string) => {
   try {
     jsonKey = JSON.parse(keyData) as JsonWebKey;
   } catch (e) {
-    throw new Error("Invalid key");
+    throw new Error("Invalid public key data");
   }
-  return await crypto.subtle.importKey(
-    "jwk",
-    jsonKey,
-    { name: "RSA-OAEP", hash: "SHA-256" },
-    true,
-    ["decrypt"]
-  );
+  let key: CryptoKey;
+  try {
+    key = await crypto.subtle.importKey(
+      "jwk",
+      jsonKey,
+      { name: "RSA-OAEP", hash: "SHA-256" },
+      true,
+      ["encrypt", "wrapKey"]
+    );
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      throw new Error(`Failed to import public key: ${e.message}`);
+    }
+  }
+  return key;
 };
 
 export const decryptPriKey = async (

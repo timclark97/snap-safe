@@ -10,7 +10,7 @@ export const colors = {
 };
 
 export const sizes = {
-  sm: "px-2 py-1",
+  sm: "px-2 py-2",
   base: "px-3 py-3"
 };
 

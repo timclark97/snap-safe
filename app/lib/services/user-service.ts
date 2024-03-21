@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
-import { sqlite, users } from "../sqlite";
+import { authMethods, sqlite, users } from "../sqlite";
 
 export const serializeUser = (user: {
   id: string;
@@ -32,7 +32,7 @@ export const updateUser = async (
 ) => {
   const data = updateUserSchema.safeParse(attributes);
   if (!data.success) {
-    return { errors: data.error.flatten().fieldErrors };
+    throw new Error("User data is invalid");
   }
   const [user] = await sqlite
     .update(users)
@@ -41,5 +41,27 @@ export const updateUser = async (
     .returning()
     .execute();
 
-  return serializeUser(user);
+  return user;
+};
+
+export const getUserByEmail = async (email: string) => {
+  const validation = z.string().email().safeParse(email);
+  if (!validation.success) {
+    throw new Error("Invalid email");
+  }
+
+  const result = await sqlite
+    .select()
+    .from(authMethods)
+    .where(and(eq(authMethods.value, email), eq(authMethods.type, "email")))
+    .innerJoin(users, eq(users.id, authMethods.userId))
+    .execute();
+
+  if (result.length === 0) {
+    return null;
+  }
+
+  const [{ users: user }] = result;
+
+  return user;
 };

@@ -1,11 +1,5 @@
 import type { ActionFunctionArgs, MetaFunction } from "@remix-run/node";
-import {
-  Form,
-  json,
-  redirect,
-  useNavigation,
-  useActionData
-} from "@remix-run/react";
+import { Form, redirect, useNavigation } from "@remix-run/react";
 
 import { requireSession } from "@/lib/services/session-service";
 import { updateUser } from "@/lib/services/user-service";
@@ -20,34 +14,20 @@ export async function action({ request }: ActionFunctionArgs) {
   const body = await request.formData();
   const firstName = body.get("firstName")?.toString();
   const lastName = body.get("lastName")?.toString();
-  const result = await updateUser(session.userId, { firstName, lastName });
-  if ("errors" in result) {
-    return json(result, { status: 400 });
-  }
+  await updateUser(session.userId, { firstName, lastName });
 
   return redirect("/dash/onboarding/password");
 }
 
 export default function DashLayout() {
   const { state } = useNavigation();
-  const result = useActionData<typeof action>();
   return (
     <div>
       <Form method="POST">
         <FormCard header="Create Your Account" subHeader="Enter your name">
           <fieldset disabled={state === "submitting"} className="grid gap-8">
-            <Input
-              required
-              name="firstName"
-              label="First Name"
-              errors={result?.errors}
-            />
-            <Input
-              required
-              name="lastName"
-              label="Last Name"
-              errors={result?.errors}
-            />
+            <Input required name="firstName" label="First Name" />
+            <Input required name="lastName" label="Last Name" />
             <Button isLoading={state === "submitting"} type="submit">
               Next
             </Button>

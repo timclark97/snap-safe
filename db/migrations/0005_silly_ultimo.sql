@@ -1,0 +1,1 @@
+ALTER TABLE photos ADD `iv` text DEFAULT '' NOT NULL;

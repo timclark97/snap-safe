@@ -7,8 +7,9 @@ import { serializeUser } from "./user-service";
 const sessionCookie = createCookie("s_id", {
   httpOnly: true,
   sameSite: "strict",
-  secure: true,
-  path: "/"
+  secure: false,
+  path: "/",
+  domain: "localhost"
 });
 
 /**

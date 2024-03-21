@@ -98,6 +98,7 @@ export const albumKeys = sqliteTable("album_keys", {
 
 export const photos = sqliteTable("photos", {
   id: text("id").primaryKey().$default(generateId),
+  iv: text("iv").notNull().default(""),
   createdOn: integer("created_on", { mode: "timestamp_ms" })
     .notNull()
     .$default(() => new Date()),
