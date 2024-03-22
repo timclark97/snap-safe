@@ -8,7 +8,7 @@ import {
 } from "@remix-run/react";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 
-import { getAlbumAccess } from "@/lib/services/album-service";
+import { hasAlbumPermission } from "@/lib/services/album-service";
 import { requireSession } from "@/lib/services/session-service";
 import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";
 import { getUserByEmail } from "@/lib/services/user-service";
@@ -22,8 +22,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const session = await requireSession(request);
   const albumId = params.id as string;
 
-  const access = await getAlbumAccess(session.userId, albumId);
-  if (!access || access.permission.permission !== "owner") {
+  if (!(await hasAlbumPermission(session.userId, albumId, "owner"))) {
     throw json(
       { error: "You do not have permission to share this album" },
       {

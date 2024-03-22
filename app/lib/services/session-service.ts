@@ -2,7 +2,6 @@ import { createCookie, redirect } from "@remix-run/node";
 import { eq } from "drizzle-orm";
 
 import { sessions, sqlite } from "@/lib/sqlite";
-import { serializeUser } from "./user-service";
 
 const sessionCookie = createCookie("s_id", {
   httpOnly: true,
@@ -37,20 +36,7 @@ export const createSessionCookie = async (
   });
 };
 
-export type SessionUser = {
-  id: string;
-  createdOn: number;
-  firstName: string;
-  lastName: string;
-};
-export type Session = {
-  id: string;
-  userId: string;
-  expiresOn: Date;
-  user: SessionUser;
-};
-
-export const requireSession = async (request: Request): Promise<Session> => {
+export const requireSession = async (request: Request) => {
   const sessionId = await getSessionId(request);
   if (!sessionId) {
     throw redirect("/sign-in", {
@@ -67,14 +53,7 @@ export const requireSession = async (request: Request): Promise<Session> => {
       expiresOn: true
     },
     with: {
-      user: {
-        columns: {
-          id: true,
-          createdOn: true,
-          firstName: true,
-          lastName: true
-        }
-      }
+      user: true
     }
   });
 
@@ -99,7 +78,7 @@ export const requireSession = async (request: Request): Promise<Session> => {
 
   return {
     ...session,
-    user: serializeUser(session.user)
+    user: session.user
   };
 };
 

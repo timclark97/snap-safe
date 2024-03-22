@@ -253,6 +253,14 @@
     return bytes;
   };
 
+  // app/lib/helpers/logger.ts
+  var import_meta = {};
+  var debug = (message) => {
+    if (import_meta.env.VITE_DEBUG === "on") {
+      console.debug("DEBUG: " + message);
+    }
+  };
+
   // app/lib/services/crypto-service.ts
   var createIv = () => crypto.getRandomValues(new Uint8Array(12));
   var dbKey;
@@ -260,27 +268,40 @@
     if (dbKey) {
       return dbKey;
     }
-    const wrappingKeyMaterial = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(navigator.userAgent + userId),
-      { name: "PBKDF2" },
-      false,
-      ["deriveKey", "deriveBits"]
-    );
-    dbKey = await crypto.subtle.deriveKey(
-      {
-        name: "PBKDF2",
-        salt: new TextEncoder().encode(userId),
-        iterations: 6e5,
-        hash: "SHA-256"
-      },
-      wrappingKeyMaterial,
-      { name: "AES-GCM", length: 256 },
-      true,
-      ["unwrapKey", "wrapKey"]
-    );
-    if (!dbKey) {
-      throw new Error("Failed to get dbKey not found");
+    debug("Importing dbKey");
+    let wrappingKeyMaterial;
+    try {
+      wrappingKeyMaterial = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(navigator.userAgent + userId),
+        { name: "PBKDF2" },
+        false,
+        ["deriveKey", "deriveBits"]
+      );
+    } catch (e) {
+      if (e instanceof Error) {
+        debug("Failed to import db key" + e.message);
+      }
+    }
+    if (wrappingKeyMaterial) {
+      try {
+        dbKey = await crypto.subtle.deriveKey(
+          {
+            name: "PBKDF2",
+            salt: new TextEncoder().encode(userId),
+            iterations: 6e5,
+            hash: "SHA-256"
+          },
+          wrappingKeyMaterial,
+          { name: "AES-GCM", length: 256 },
+          true,
+          ["unwrapKey", "wrapKey"]
+        );
+      } catch (e) {
+        if (e instanceof Error) {
+          debug("Failed to derive db key" + e.message);
+        }
+      }
     }
     return dbKey;
   };
@@ -291,6 +312,7 @@
     if (keyDb) {
       return keyDb;
     }
+    debug("Opening keydb");
     keyDb = await openDB("kdb", 1, {
       upgrade(db) {
         db.createObjectStore("ak");
@@ -303,7 +325,11 @@
     const dbKey2 = await getDbKey(userId);
     const keyData = await db.get("ak", keyId);
     if (!keyData) {
+      debug(`No key found for ${keyId}`);
       return;
+    }
+    if (!keyData.usages) {
+      throw new Error(`No usages found for key ${keyId}`);
     }
     if (keyData.setOn < new Date((/* @__PURE__ */ new Date()).getDate() + 14).getTime()) {
       await db.delete("ak", keyId);
@@ -377,7 +403,7 @@
       id: data.id,
       state: "preparing_upload"
     });
-    const resp = await fetch(`/dash/albums/${data.albumId}/create-upload-url`, {
+    const resp = await fetch(`/dash/albums/${data.albumId}/upload-url`, {
       method: "POST",
       body: JSON.stringify({ photoId: data.id })
     });

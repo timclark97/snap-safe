@@ -1,5 +1,5 @@
 import { useLoaderData } from "@remix-run/react";
-import { type LoaderFunctionArgs, json } from "@remix-run/node";
+import { LoaderFunctionArgs, json } from "@remix-run/node";
 
 import { useSelf } from "@/lib/hooks/useSelf";
 import { LinkButton, StyledLink } from "@/components/common";

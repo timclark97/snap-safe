@@ -60,7 +60,7 @@ onmessage = async (event: {
     state: "preparing_upload"
   });
 
-  const resp = await fetch(`/dash/albums/${data.albumId}/create-upload-url`, {
+  const resp = await fetch(`/dash/albums/${data.albumId}/upload-url`, {
     method: "POST",
     body: JSON.stringify({ photoId: data.id })
   });

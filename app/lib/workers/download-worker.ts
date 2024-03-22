@@ -39,16 +39,13 @@ onmessage = async (event: {
     state: "preparing_download"
   });
 
-  const urlFetch = await fetch(
-    `/dash/albums/${data.albumId}/create-download-url`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ photoId: data.id })
-    }
-  );
+  const urlFetch = await fetch(`/dash/albums/${data.albumId}/download-url`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ photoId: data.id })
+  });
 
   if (!urlFetch.ok) {
     postMessage({

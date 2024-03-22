@@ -1,43 +1,76 @@
-import { eq, and } from "drizzle-orm";
+import { sqlite, albumKeys, albums, albumPermissions } from "@/lib/sqlite";
 
-import { albumKeys, albumPermissions, sqlite } from "@/lib/sqlite";
+export const insertAlbum = async ({
+  userId,
+  name,
+  description,
+  key,
+  iv
+}: {
+  userId: string;
+  name: string;
+  description?: string;
+  key: string;
+  iv: string;
+}) => {
+  const { albumId, albumKeyId } = await sqlite.transaction(async (db) => {
+    const [album] = await db
+      .insert(albums)
+      .values({
+        userId: userId,
+        name,
+        description
+      })
+      .returning()
+      .execute();
 
-export const getAlbumAccess = async (userId: string, albumId: string) => {
-  const result = await sqlite
-    .select()
-    .from(albumPermissions)
-    .where(
-      and(
-        eq(albumPermissions.albumId, albumId),
-        eq(albumPermissions.userId, userId)
-      )
-    )
-    .innerJoin(
-      albumKeys,
-      and(eq(albumKeys.albumId, albumId), eq(albumKeys.userId, userId))
-    )
-    .execute();
+    const [albumKey] = await db
+      .insert(albumKeys)
+      .values({
+        userId: userId,
+        albumId: album.id,
+        key,
+        iv
+      })
+      .returning()
+      .execute();
 
-  if (result.length === 0) {
-    return undefined;
-  }
+    await db
+      .insert(albumPermissions)
+      .values({
+        userId: userId,
+        albumId: album.id,
+        permission: "owner",
+        grantedBy: userId
+      })
+      .execute();
 
-  return { permission: result[0].album_permissions, key: result[0].album_keys };
+    return { albumId: album.id, albumKeyId: albumKey.id };
+  });
+  return { albumId, albumKeyId };
 };
 
-export const hasWriteAccess = async (userId: string, albumId: string) => {
-  const permission = sqlite.query.albumPermissions.findFirst({
-    where: (ap, { eq, and, or }) =>
-      and(
-        eq(ap.albumId, albumId),
-        eq(ap.userId, userId),
-        or(eq(ap.permission, "owner"), eq(ap.permission, "write"))
-      )
+export const hasAlbumPermission = async (
+  userId: string,
+  albumId: string,
+  permission: "read" | "write" | "owner"
+) => {
+  const access = await sqlite.query.albumPermissions.findFirst({
+    where: (ap, { and, eq }) =>
+      and(eq(ap.albumId, albumId), eq(ap.userId, userId))
   });
 
-  if (!permission) {
+  if (!access) {
     return false;
   }
 
-  return true;
+  if (permission === "read") {
+    return true;
+  }
+
+  if (permission === "write") {
+    return access.permission === "write" || access.permission === "owner";
+  }
+
+  return access.permission === permission;
 };

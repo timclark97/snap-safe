@@ -69,7 +69,7 @@ export default function Alert({
           <div className="mt-2 text-sm">{children}</div>
           {revalidateable && (
             <button
-              className="font-semibold underline text-sm"
+              className="underline text-sm mt-2"
               onClick={() => revalidator.revalidate()}
             >
               Try Again

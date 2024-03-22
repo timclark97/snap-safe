@@ -1,9 +1,10 @@
-import type { ActionFunctionArgs, MetaFunction } from "@remix-run/node";
+import { ActionFunctionArgs, MetaFunction, json } from "@remix-run/node";
 import { Form, redirect, useNavigation } from "@remix-run/react";
 
 import { requireSession } from "@/lib/services/session-service";
 import { updateUser } from "@/lib/services/user-service";
 import { Button, Input, FormCard } from "@/components/common";
+import { nameValidator } from "@/lib/validators/onboarding-validators";
 
 export const meta: MetaFunction = () => {
   return [{ title: "SnapSafe | Welcome" }];
@@ -11,10 +12,12 @@ export const meta: MetaFunction = () => {
 
 export async function action({ request }: ActionFunctionArgs) {
   const session = await requireSession(request);
-  const body = await request.formData();
-  const firstName = body.get("firstName")?.toString();
-  const lastName = body.get("lastName")?.toString();
-  await updateUser(session.userId, { firstName, lastName });
+  const validation = nameValidator(await request.formData());
+  if (!validation.success) {
+    throw json({ message: "Names are invalid." }, { status: 400 });
+  }
+
+  await updateUser(session.userId, validation.data);
 
   return redirect("/dash/onboarding/password");
 }

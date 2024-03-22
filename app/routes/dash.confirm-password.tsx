@@ -3,7 +3,6 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
 import { useNavigate, useLoaderData } from "@remix-run/react";
 
-import { sqlite } from "@/lib/sqlite";
 import { requireSession } from "@/lib/services/session-service";
 import { Button, FormCard, Input, Alert } from "@/components/common";
 import { deriveMK } from "@/lib/services/crypto-service";
@@ -11,16 +10,7 @@ import { getKey, updateKey, storeKey } from "@/lib/services/keydb-service";
 import { base64ToArray } from "@/lib/helpers/binary-helpers";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const session = await requireSession(request);
-  const user = await sqlite.query.users.findFirst({
-    where: (u, { eq }) => eq(u.id, session.userId),
-    columns: {
-      id: true,
-      mkS: true,
-      mkT: true,
-      mkTIv: true
-    }
-  });
+  const { user } = await requireSession(request);
 
   if (!user?.mkS || !user?.mkT || !user?.mkTIv) {
     return redirect("/dash/onboarding/password");

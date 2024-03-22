@@ -1,9 +1,8 @@
 import { type ActionFunctionArgs } from "@remix-run/node";
 
 import { requireSession } from "@/lib/services/session-service";
-import { sqlite } from "@/lib/sqlite";
-import { createUploadRequest } from "@/lib/services/bucket-service";
-import { hasWriteAccess } from "@/lib/services/album-service";
+import { createGetRequest } from "@/lib/services/bucket-service";
+import { hasAlbumPermission } from "@/lib/services/album-service";
 
 export async function action({ request, params }: ActionFunctionArgs) {
   if (request.method !== "POST") {
@@ -14,6 +13,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
       }
     });
   }
+
+  const albumId = params.id as string;
   const session = await requireSession(request);
   const body = await request.json();
 
@@ -26,20 +27,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     });
   }
 
-  const album = await sqlite.query.albums.findFirst({
-    where: (a, { eq }) => eq(a.id, params.id as string)
-  });
-
-  if (!album) {
-    return new Response(JSON.stringify({ error: "Album not found" }), {
-      status: 404,
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
-  }
-
-  if (!(await hasWriteAccess(session.userId, params.id as string))) {
+  if (!(await hasAlbumPermission(session.userId, albumId, "read"))) {
     return new Response(JSON.stringify({ error: "Unable to access album" }), {
       status: 403,
       headers: {
@@ -48,7 +36,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     });
   }
 
-  const { url } = await createUploadRequest(body.photoId);
+  const { url } = await createGetRequest(body.photoId);
 
   return new Response(JSON.stringify({ url }), {
     status: 200,

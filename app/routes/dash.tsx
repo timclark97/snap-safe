@@ -7,6 +7,8 @@ import { useNavigate, useLocation } from "@remix-run/react";
 import { requireSession } from "@/lib/services/session-service";
 import { DashHeader } from "@/components/common";
 import { getKey } from "@/lib/services/keydb-service";
+import { serializeUser } from "@/lib/services/user-service";
+import { debug } from "@/lib/helpers/logger";
 
 export const meta: MetaFunction = () => {
   return [{ title: "SnapSafe | Dashboard" }];
@@ -14,7 +16,7 @@ export const meta: MetaFunction = () => {
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const session = await requireSession(request);
-  return json({ user: session.user });
+  return json({ user: serializeUser(session.user) });
 }
 
 type UploadItem = {
@@ -30,24 +32,27 @@ export default function DashLayout() {
   const [uploads, setUploads] = useState<Map<string, UploadItem>>(new Map());
   const { pathname } = useLocation();
 
+  const gateKeep = async () => {
+    if (
+      [
+        "/dash/confirm-password",
+        "/dash/onboarding/password",
+        "/dash/onboarding/password-set",
+        "/dash/onboarding/name"
+      ].includes(pathname)
+    ) {
+      return;
+    }
+    const key = await getKey(user.id, user.id);
+
+    if (!key && pathname !== "/dash/confirm-password") {
+      debug("Key not stored in keydb. Redirecting to confirm-password.");
+      navigate("/dash/confirm-password");
+    }
+  };
+
   useEffect(() => {
-    getKey(user.id, user.id).then((key) => {
-      if (
-        !key &&
-        ![
-          "/dash/confirm-password",
-          "/dash/onboarding/password",
-          "/dash/onboarding/password-set",
-          "/dash/onboarding/name"
-        ].includes(pathname)
-      ) {
-        navigate("/dash/confirm-password");
-        return;
-      }
-      if (pathname === "/dash") {
-        navigate("/dash/home");
-      }
-    });
+    gateKeep();
   }, [user.id]);
 
   const enqueuePhoto = (id: string, file: File, albumId: string) => {

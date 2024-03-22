@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
-import { type ActionFunctionArgs, json } from "@remix-run/node";
+import { ActionFunctionArgs, json } from "@remix-run/node";
 import { useFetcher, useNavigate } from "@remix-run/react";
 
-import { sqlite, albumKeys, albums, albumPermissions } from "@/lib/sqlite";
-import { FormCard, Input, Button, Alert } from "@/components/common";
-import { createAlbumKey } from "@/lib/services/crypto-service";
-import { createIv } from "@/lib/services/crypto-service";
-import { useSelf } from "@/lib/hooks/useSelf";
-import { getKey, storeKey } from "@/lib/services/keydb-service";
-import { arrayToBase64, bufferToBase64 } from "@/lib/helpers/binary-helpers";
+import { createAlbumKey, wrapAlbumKey } from "@/lib/services/crypto-service";
+import { storeKey, getKey } from "@/lib/services/keydb-service";
 import { requireSession } from "@/lib/services/session-service";
+import { insertAlbum } from "@/lib/services/album-service";
+import { FormCard, Input, Button, Alert } from "@/components/common";
+import { arrayToBase64, bufferToBase64 } from "@/lib/helpers/binary-helpers";
+import { useSelf } from "@/lib/hooks/useSelf";
 
 export async function action({ request }: ActionFunctionArgs) {
   const session = await requireSession(request);
@@ -20,39 +19,16 @@ export async function action({ request }: ActionFunctionArgs) {
   const iv = body.get("iv") as string;
   const key = body.get("key") as string;
 
-  const { albumId, albumKeyId } = await sqlite.transaction(async (db) => {
-    const [album] = await db
-      .insert(albums)
-      .values({
-        userId: session.userId,
-        name: albumName,
-        description: albumDescription
-      })
-      .returning()
-      .execute();
+  if (!albumName || !iv || !key) {
+    throw json({ error: "Invalid request. Try again." }, { status: 400 });
+  }
 
-    const [albumKey] = await db
-      .insert(albumKeys)
-      .values({
-        userId: session.userId,
-        albumId: album.id,
-        key,
-        iv
-      })
-      .returning()
-      .execute();
-
-    await db
-      .insert(albumPermissions)
-      .values({
-        userId: session.userId,
-        albumId: album.id,
-        permission: "owner",
-        grantedBy: session.userId
-      })
-      .execute();
-
-    return { albumId: album.id, albumKeyId: albumKey.id };
+  const { albumId, albumKeyId } = await insertAlbum({
+    userId: session.userId,
+    name: albumName,
+    description: albumDescription,
+    key,
+    iv
   });
 
   return json({ albumId, albumKeyId });
@@ -64,7 +40,34 @@ export default function DashAlbumCreate() {
   const [albumKey, setAlbumKey] = useState<CryptoKey | null>(null);
   const fetcher = useFetcher<typeof action>();
   const navigate = useNavigate();
-  const { id } = useSelf();
+  const user = useSelf();
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      setIsLoading(true);
+      const fd = new FormData(e.currentTarget);
+      const albumName = fd.get("name") as string;
+      const albumDescription = fd.get("description") as string;
+      const mk = await getKey(user.id, user.id);
+      if (!mk) {
+        throw new Error("Master key not found.");
+      }
+      const key = await createAlbumKey();
+      const { iv, wrappedKey } = await wrapAlbumKey(key, mk);
+      setAlbumKey(key);
+      const body = new FormData();
+      body.append("albumName", albumName);
+      body.append("albumDescription", albumDescription);
+      body.append("iv", arrayToBase64(iv));
+      body.append("key", bufferToBase64(wrappedKey));
+      fetcher.submit(body, { method: "POST" });
+    } catch (e: unknown) {
+      setIsLoading(false);
+      setError(e instanceof Error ? e.message : "An error occurred.");
+    }
+  };
 
   useEffect(() => {
     if (
@@ -74,7 +77,7 @@ export default function DashAlbumCreate() {
       fetcher.data.albumKeyId &&
       albumKey
     ) {
-      storeKey(albumKey, fetcher.data.albumId, id).then(() => {
+      storeKey(albumKey, fetcher.data.albumId, user.id).then(() => {
         setAlbumKey(null);
         navigate(`/dash/albums/${fetcher.data!.albumId}`);
       });
@@ -84,52 +87,7 @@ export default function DashAlbumCreate() {
   return (
     <div>
       <FormCard header="Create Album">
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            try {
-              setIsLoading(true);
-              const fd = new FormData(e.currentTarget);
-              const albumName = fd.get("name") as string;
-              const albumDescription = fd.get("description") as string;
-              const key = await createAlbumKey();
-              const mk = await getKey(id, id);
-
-              if (!mk) {
-                setError("Unable to create album.");
-                setIsLoading(false);
-                return;
-              }
-
-              const akIv = createIv();
-              const wrappedKey = await window.crypto.subtle.wrapKey(
-                "raw",
-                key,
-                mk,
-                {
-                  name: "AES-GCM",
-                  iv: akIv
-                }
-              );
-
-              setAlbumKey(key);
-              const body = new FormData();
-              body.append("albumName", albumName);
-              body.append("albumDescription", albumDescription);
-              body.append("iv", arrayToBase64(akIv));
-              body.append("key", bufferToBase64(wrappedKey));
-              fetcher.submit(body, { method: "POST" });
-              setIsLoading(false);
-            } catch (e: unknown) {
-              setIsLoading(false);
-              if (e instanceof Error) {
-                setError(e.message);
-                return;
-              }
-              setError("An unknown error occurred.");
-            }
-          }}
-        >
+        <form onSubmit={onSubmit}>
           <fieldset className="grid gap-8" disabled={isLoading}>
             <Alert variant="error" dismissible>
               {error}

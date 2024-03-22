@@ -1,5 +1,6 @@
 /* eslint-disable import/exports-last */
-import { base64ToArray } from "@/lib/helpers/binary-helpers";
+import { base64ToArray, bufferToBase64 } from "@/lib/helpers/binary-helpers";
+import { debug } from "../helpers/logger";
 
 type SaltType = ArrayBuffer | Uint8Array | string;
 
@@ -22,31 +23,45 @@ export const getDbKey = async (userId: string) => {
   if (dbKey) {
     return dbKey;
   }
-  const wrappingKeyMaterial = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(navigator.userAgent + userId),
-    { name: "PBKDF2" },
-    false,
-    ["deriveKey", "deriveBits"]
-  );
+  debug("Importing dbKey");
+  let wrappingKeyMaterial: CryptoKey | undefined;
 
-  dbKey = await crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt: new TextEncoder().encode(userId),
-      iterations: 600000,
-      hash: "SHA-256"
-    },
-    wrappingKeyMaterial,
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["unwrapKey", "wrapKey"]
-  );
-
-  if (!dbKey) {
-    throw new Error("Failed to get dbKey not found");
+  try {
+    wrappingKeyMaterial = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(navigator.userAgent + userId),
+      { name: "PBKDF2" },
+      false,
+      ["deriveKey", "deriveBits"]
+    );
+  } catch (e) {
+    if (e instanceof Error) {
+      debug("Failed to import db key" + e.message);
+    }
   }
-  return dbKey;
+
+  if (wrappingKeyMaterial) {
+    try {
+      dbKey = await crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: new TextEncoder().encode(userId),
+          iterations: 600000,
+          hash: "SHA-256"
+        },
+        wrappingKeyMaterial,
+        { name: "AES-GCM", length: 256 },
+        true,
+        ["unwrapKey", "wrapKey"]
+      );
+    } catch (e) {
+      if (e instanceof Error) {
+        debug("Failed to derive db key" + e.message);
+      }
+    }
+  }
+
+  return dbKey!;
 };
 
 /**
@@ -125,21 +140,20 @@ export const importPubKey = async (keyData: string) => {
   } catch (e) {
     throw new Error("Invalid public key data");
   }
-  let key: CryptoKey;
   try {
-    key = await crypto.subtle.importKey(
+    const key = await crypto.subtle.importKey(
       "jwk",
       jsonKey,
       { name: "RSA-OAEP", hash: "SHA-256" },
       true,
       ["encrypt", "wrapKey"]
     );
+    return key;
   } catch (e: unknown) {
     if (e instanceof Error) {
       throw new Error(`Failed to import public key: ${e.message}`);
     }
   }
-  return key;
 };
 
 export const decryptPriKey = async (
@@ -167,4 +181,61 @@ export const createAlbumKey = async () => {
     true,
     ["encrypt", "decrypt"]
   );
+};
+
+/**
+ * Client side - Create a new master key from a password.
+ * The salt is encrypted by the new key to be used later to
+ * confirm the key when it is re-derived from the same password
+ */
+export const initializeMK = async (userId: string, password: string) => {
+  const salt = createSalt();
+  const key = await deriveMK(userId, password, salt);
+  const mktIv = createIv();
+  const mkt = await window.crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv: mktIv
+    },
+    key,
+    salt
+  );
+
+  return { salt, key, mktIv, mkt };
+};
+
+/**
+ * Client side - Creates a new key pair, exports the public key as
+ * a JWK and wraps the private key with the master key
+ */
+export const initializeKeyPair = async (masterKey: CryptoKey) => {
+  const keyPair = await createKeyPair();
+  const puK = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
+  const prKIv = createIv();
+  const prKBuffer = await window.crypto.subtle.wrapKey(
+    "pkcs8",
+    keyPair.privateKey,
+    masterKey,
+    {
+      name: "AES-GCM",
+      iv: prKIv
+    }
+  );
+
+  return { puK, prKIv, wrappedPrK: bufferToBase64(prKBuffer) };
+};
+
+/**
+ * Client side - Wraps album key with user's master key
+ */
+export const wrapAlbumKey = async (
+  albumKey: CryptoKey,
+  masterKey: CryptoKey
+) => {
+  const iv = createIv();
+  const wrappedKey = await crypto.subtle.wrapKey("raw", albumKey, masterKey, {
+    name: "AES-GCM",
+    iv
+  });
+  return { wrappedKey, iv };
 };
