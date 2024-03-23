@@ -15,7 +15,7 @@ import { getUserByEmail } from "@/lib/services/user-service";
 import { getKey } from "@/lib/services/keydb-service";
 import { importPubKey } from "@/lib/services/crypto-service";
 import { Alert, Button, Input } from "@/components/common";
-import { useSelf } from "@/lib/hooks/useSelf";
+import { useSelf } from "@/lib/contexts/self-context";
 import { bufferToBase64 } from "@/lib/helpers/binary-helpers";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {

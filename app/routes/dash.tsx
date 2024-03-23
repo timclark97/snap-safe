@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
-import { Outlet, useLoaderData } from "@remix-run/react";
+import { useEffect } from "react";
+import { Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useNavigate, useLocation } from "@remix-run/react";
 
 import { requireSession } from "@/lib/services/session-service";
-import { DashHeader } from "@/components/common";
+import { Alert, DashHeader } from "@/components/common";
 import { getKey } from "@/lib/services/keydb-service";
 import { serializeUser } from "@/lib/services/user-service";
 import { debug } from "@/lib/helpers/logger";
+import { SelfContextProvider } from "@/lib/contexts/self-context";
+import { UploadContextProvider } from "@/lib/contexts/upload-context";
+import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";
 
 export const meta: MetaFunction = () => {
   return [{ title: "SnapSafe | Dashboard" }];
@@ -19,17 +22,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   return json({ user: serializeUser(session.user) });
 }
 
-type UploadItem = {
-  file: File;
-  albumId: string;
-  state: "pending" | "uploading" | "done" | "error";
-  error?: string;
-};
-
 export default function DashLayout() {
   const { user } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
-  const [uploads, setUploads] = useState<Map<string, UploadItem>>(new Map());
   const { pathname } = useLocation();
 
   const gateKeep = async () => {
@@ -48,6 +43,12 @@ export default function DashLayout() {
     if (!key && pathname !== "/dash/confirm-password") {
       debug("Key not stored in keydb. Redirecting to confirm-password.");
       navigate("/dash/confirm-password");
+      return;
+    }
+
+    if (pathname === "/dash") {
+      navigate("/dash/home");
+      return;
     }
   };
 
@@ -55,63 +56,25 @@ export default function DashLayout() {
     gateKeep();
   }, [user.id]);
 
-  const enqueuePhoto = (id: string, file: File, albumId: string) => {
-    setUploads((uploads) => {
-      if (uploads.has(id)) {
-        return uploads;
-      }
-      uploads.set(id, { file, albumId, state: "pending" });
-
-      return new Map(uploads);
-    });
-    const worker = new Worker("/workers/upload-worker.js");
-    worker.postMessage({
-      id,
-      albumId,
-      userId: user.id,
-      file
-    });
-    worker.onmessage = (event) => {
-      const data = event.data;
-      setUploads((uploads) => {
-        const upload = uploads.get(id);
-        if (!upload) {
-          return uploads;
-        }
-        if (data.error) {
-          uploads.set(id, {
-            ...upload,
-            state: data.state,
-            error: data.error
-          });
-          return new Map(uploads);
-        }
-
-        uploads.set(id, {
-          ...upload,
-          state: data.state
-        });
-
-        return new Map(uploads);
-      });
-    };
-  };
   return (
     <>
       <DashHeader user={user} />
       <div className="py-8 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <Outlet context={{ user, enqueuePhoto }} />
+        <SelfContextProvider user={user}>
+          <UploadContextProvider>
+            <Outlet />
+          </UploadContextProvider>
+        </SelfContextProvider>
       </div>
-      {uploads.size > 0 && (
-        <div className="fixed bottom-0 right-2 border rounded-md">
-          {[...uploads.entries()].map(([id, upload]) => (
-            <div key={id} className="flex">
-              <div>{upload.file.name}</div>
-              <div>{upload.state}</div>
-            </div>
-          ))}
-        </div>
-      )}
     </>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  return (
+    <Alert variant="error" revalidateable>
+      {getErrorBoundaryMessage(error)}
+    </Alert>
   );
 }

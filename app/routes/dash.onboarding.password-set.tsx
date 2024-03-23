@@ -29,14 +29,11 @@ export const meta: MetaFunction = () => {
   return [{ title: "SnapSafe | Welcome" }];
 };
 
-export function shouldRevalidate({
-  actionResult,
-  defaultShouldRevalidate
-}: ShouldRevalidateFunctionArgs) {
-  if (actionResult) {
+export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
+  if (args.actionResult) {
     return false;
   }
-  return defaultShouldRevalidate;
+  return args.defaultShouldRevalidate;
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {

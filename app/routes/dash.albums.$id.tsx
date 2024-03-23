@@ -15,13 +15,13 @@ import {
 import { Alert, LinkButton } from "@/components/common";
 import { colors, sizes } from "@/components/common/Button";
 import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";
-import { useUpload } from "@/lib/hooks/useUpload";
 import { EncryptedPhoto } from "@/components/EncryptedPhoto";
-import { storeKey, getKey } from "@/lib/services/keydb-service";
-import { useSelf } from "@/lib/hooks/useSelf";
+import { storeKey, getKey, getMasterKey } from "@/lib/services/keydb-service";
+import { useSelf } from "@/lib/contexts/self-context";
+import { useUpload } from "@/lib/contexts/upload-context";
+import { unwrapAlbumKey } from "@/lib/services/crypto-service";
 
 import { generateId } from "@/lib/helpers/id-generator";
-import { base64ToArray } from "@/lib/helpers/binary-helpers";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const session = await requireSession(request);
@@ -70,7 +70,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 export default function Album() {
   const { album, photos, key, permission } = useLoaderData<typeof loader>();
   const self = useSelf();
-  const { enqueuePhoto } = useUpload();
+  const { enqueueUpload } = useUpload();
 
   const setAlbumKey = async () => {
     const existingKey = await getKey(album.id, self.id);
@@ -80,30 +80,10 @@ export default function Album() {
     }
     console.log("No existing key");
 
-    const masterKey = await getKey(self.id, self.id);
-    if (!masterKey) {
-      console.log("Master key not found");
-      return;
-    }
+    const masterKey = await getMasterKey(self.id);
 
-    try {
-      const albumKey = await crypto.subtle.unwrapKey(
-        "raw",
-        base64ToArray(key.key),
-        masterKey,
-        {
-          name: "AES-GCM",
-          iv: base64ToArray(key.iv)
-        },
-        { name: "AES-GCM" },
-        true,
-        ["encrypt", "decrypt"]
-      );
-      await storeKey(albumKey, album.id, self.id);
-    } catch (e) {
-      console.error(e);
-      console.log("failed to unwarp and store key");
-    }
+    const albumKey = await unwrapAlbumKey(key.key, key.iv, masterKey);
+    await storeKey(albumKey, album.id, self.id);
   };
 
   useEffect(() => {
@@ -114,7 +94,7 @@ export default function Album() {
     const files = Array.from(e.target.files || []);
     for (const file of files) {
       const id = generateId();
-      enqueuePhoto(id, file, album.id);
+      enqueueUpload(id, file, album.id);
     }
   };
 

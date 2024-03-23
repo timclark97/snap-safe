@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useSelf } from "@/lib/hooks/useSelf";
+import { useSelf } from "@/lib/contexts/self-context";
 
 export function EncryptedPhoto({
   photo

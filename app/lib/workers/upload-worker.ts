@@ -121,5 +121,6 @@ onmessage = async (event: {
     id: data.id,
     state: "done"
   });
+
   return;
 };

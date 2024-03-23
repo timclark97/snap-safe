@@ -6,7 +6,8 @@ const esbuild = await context({
     "app/lib/workers/download-worker.ts"
   ],
   bundle: true,
-  outdir: "public/workers"
+  outdir: "public/workers",
+  format: "esm"
 });
 
 await esbuild.watch();

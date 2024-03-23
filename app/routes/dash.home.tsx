@@ -1,7 +1,7 @@
 import { useLoaderData } from "@remix-run/react";
 import { LoaderFunctionArgs, json } from "@remix-run/node";
 
-import { useSelf } from "@/lib/hooks/useSelf";
+import { useSelf } from "@/lib/contexts/self-context";
 import { LinkButton, StyledLink } from "@/components/common";
 import { requireSession } from "@/lib/services/session-service";
 import { sqlite } from "@/lib/sqlite";

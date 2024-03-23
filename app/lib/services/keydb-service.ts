@@ -123,6 +123,14 @@ export const getKey = async (keyId: string, userId: string) => {
   }
 };
 
+export const getMasterKey = async (userId: string) => {
+  const key = await getKey(userId, userId);
+  if (!key) {
+    throw new Error("Master key not found");
+  }
+  return key;
+};
+
 export const clearStore = async () => {
   const db = await getDB();
   await db.clear("ak");

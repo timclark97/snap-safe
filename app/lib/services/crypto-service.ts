@@ -140,19 +140,17 @@ export const importPubKey = async (keyData: string) => {
   } catch (e) {
     throw new Error("Invalid public key data");
   }
+
   try {
-    const key = await crypto.subtle.importKey(
+    return await crypto.subtle.importKey(
       "jwk",
       jsonKey,
       { name: "RSA-OAEP", hash: "SHA-256" },
       true,
       ["encrypt", "wrapKey"]
     );
-    return key;
   } catch (e: unknown) {
-    if (e instanceof Error) {
-      throw new Error(`Failed to import public key: ${e.message}`);
-    }
+    throw new Error(e instanceof Error ? e.message : "Invalid public key data");
   }
 };
 
@@ -238,4 +236,27 @@ export const wrapAlbumKey = async (
     iv
   });
   return { wrappedKey, iv };
+};
+
+/**
+ * Client side - Unwraps album key with user's master key
+ */
+export const unwrapAlbumKey = async (
+  wrappedKey: string,
+  iv: string,
+  masterKey: CryptoKey
+) => {
+  const key = await crypto.subtle.unwrapKey(
+    "raw",
+    base64ToArray(wrappedKey),
+    masterKey,
+    {
+      name: "AES-GCM",
+      iv: base64ToArray(iv)
+    },
+    { name: "AES-GCM" },
+    true,
+    ["encrypt", "decrypt"]
+  );
+  return key;
 };

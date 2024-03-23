@@ -1,34 +1,40 @@
 import { useState, useEffect } from "react";
 import { ActionFunctionArgs, json } from "@remix-run/node";
-import { useFetcher, useNavigate } from "@remix-run/react";
+import {
+  useFetcher,
+  useNavigate,
+  ShouldRevalidateFunctionArgs,
+  useRouteError
+} from "@remix-run/react";
 
 import { createAlbumKey, wrapAlbumKey } from "@/lib/services/crypto-service";
-import { storeKey, getKey } from "@/lib/services/keydb-service";
+import { storeKey, getMasterKey } from "@/lib/services/keydb-service";
 import { requireSession } from "@/lib/services/session-service";
 import { insertAlbum } from "@/lib/services/album-service";
 import { FormCard, Input, Button, Alert } from "@/components/common";
 import { arrayToBase64, bufferToBase64 } from "@/lib/helpers/binary-helpers";
-import { useSelf } from "@/lib/hooks/useSelf";
+import { useSelf } from "@/lib/contexts/self-context";
+import { createAlbumValidator } from "@/lib/validators/album-validators";
+import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";
+
+export function shouldRevalidate(args: ShouldRevalidateFunctionArgs) {
+  if (args.actionResult) {
+    return false;
+  }
+  return args.defaultShouldRevalidate;
+}
 
 export async function action({ request }: ActionFunctionArgs) {
   const session = await requireSession(request);
-
-  const body = await request.formData();
-  const albumName = body.get("albumName") as string;
-  const albumDescription = body.get("albumDescription") as string;
-  const iv = body.get("iv") as string;
-  const key = body.get("key") as string;
-
-  if (!albumName || !iv || !key) {
+  const validator = createAlbumValidator(await request.formData());
+  if (!validator.success) {
+    console.log(validator.error.issues);
     throw json({ error: "Invalid request. Try again." }, { status: 400 });
   }
 
   const { albumId, albumKeyId } = await insertAlbum({
     userId: session.userId,
-    name: albumName,
-    description: albumDescription,
-    key,
-    iv
+    ...validator.data
   });
 
   return json({ albumId, albumKeyId });
@@ -46,20 +52,17 @@ export default function DashAlbumCreate() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      setIsLoading(true);
       const fd = new FormData(e.currentTarget);
       const albumName = fd.get("name") as string;
       const albumDescription = fd.get("description") as string;
-      const mk = await getKey(user.id, user.id);
-      if (!mk) {
-        throw new Error("Master key not found.");
-      }
+      const mk = await getMasterKey(user.id);
       const key = await createAlbumKey();
       const { iv, wrappedKey } = await wrapAlbumKey(key, mk);
+
       setAlbumKey(key);
       const body = new FormData();
-      body.append("albumName", albumName);
-      body.append("albumDescription", albumDescription);
+      body.append("name", albumName);
+      body.append("description", albumDescription);
       body.append("iv", arrayToBase64(iv));
       body.append("key", bufferToBase64(wrappedKey));
       fetcher.submit(body, { method: "POST" });
@@ -101,5 +104,14 @@ export default function DashAlbumCreate() {
         </form>
       </FormCard>
     </div>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  return (
+    <Alert variant="error" revalidateable>
+      {getErrorBoundaryMessage(error)}
+    </Alert>
   );
 }
