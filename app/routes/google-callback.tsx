@@ -26,9 +26,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const [{ id, expiresOn }] = await sqlite
       .insert(sessions)
       .values({ userId: user.id })
-      .returning()
-      .execute();
-
+      .returning();
     return json(
       { sendTo: "/dash/onboarding/name" },
       {
@@ -46,9 +44,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       .values({
         userId: user.id
       })
-      .returning()
-      .execute();
-
+      .returning();
     return json(
       { sendTo: "/dash" },
       { headers: { "Set-Cookie": await createSessionCookie(id, expiresOn) } }

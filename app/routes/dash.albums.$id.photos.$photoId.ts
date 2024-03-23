@@ -30,7 +30,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   deleteObject(photoId);
 
-  await sqlite.delete(photos).where(eq(photos.id, photoId)).execute();
+  await sqlite.delete(photos).where(eq(photos.id, photoId));
 
   return new Response(null, {
     status: 204

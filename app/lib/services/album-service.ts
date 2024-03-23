@@ -32,9 +32,7 @@ export const insertAlbum = async ({
         name,
         description
       })
-      .returning()
-      .execute();
-
+      .returning();
     const [albumKey] = await db
       .insert(albumKeys)
       .values({
@@ -43,18 +41,13 @@ export const insertAlbum = async ({
         key,
         iv
       })
-      .returning()
-      .execute();
-
-    await db
-      .insert(albumPermissions)
-      .values({
-        userId: userId,
-        albumId: album.id,
-        permission: "owner",
-        grantedBy: userId
-      })
-      .execute();
+      .returning();
+    await db.insert(albumPermissions).values({
+      userId: userId,
+      albumId: album.id,
+      permission: "owner",
+      grantedBy: userId
+    });
 
     return { albumId: album.id, albumKeyId: albumKey.id };
   });
@@ -101,9 +94,7 @@ export const getAlbumDetails = async (userId: string, albumId: string) => {
     .innerJoin(
       albumKeys,
       and(eq(albumKeys.albumId, albums.id), eq(albumKeys.userId, userId))
-    )
-    .execute();
-
+    );
   if (queryResult.length === 0) {
     throw json({ message: "Album not found" }, { status: 404 });
   }
@@ -139,30 +130,19 @@ export const shareAlbum = async (args: {
     throw json({ message: "User not found" }, { status: 404 });
   }
 
-  const inviteId = await sqlite.transaction(async (db) => {
-    const [{ id }] = await db
-      .insert(albumInvites)
-      .values({
-        albumId,
-        grantedBy: userId,
-        userId: userToShare.id,
-        wk: wrappedKey
-      })
-      .returning()
-      .execute();
-
-    await db.insert(albumPermissions).values({
+  const [{ id }] = await sqlite
+    .insert(albumInvites)
+    .values({
       albumId,
+      grantedBy: userId,
       userId: userToShare.id,
-      permission,
-      grantedBy: userId
-    });
-    return id;
-  });
-
+      wk: wrappedKey,
+      permission
+    })
+    .returning();
   sendEmail({
     to: email,
     subject: `${userToShare.firstName ? `${userToShare.firstName}, you` : "You"} have been invited to new album`,
-    text: `You have been invited to a new album.\nClick here to accept: ${process.env.SITE_URL}/dash/accept-invite/${inviteId}`
+    text: `You have been invited to a new album.\nClick here to accept: ${process.env.SITE_URL}/dash/albums/accept-invite/${id}`
   });
 };

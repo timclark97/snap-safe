@@ -35,6 +35,9 @@ export const storeKey = async (
 ) => {
   const db = await getDB();
   const dbKey = await getDbKey(userId);
+  if (!dbKey) {
+    throw new Error("No dbKey found");
+  }
   const keyData = await crypto.subtle.wrapKey("raw", key, dbKey, {
     name: "AES-GCM",
     iv: new TextEncoder().encode(keyId + userId)
@@ -79,7 +82,7 @@ export const getKey = async (keyId: string, userId: string) => {
   const dbKey = await getDbKey(userId);
   const keyData = await db.get("ak", keyId);
   if (!keyData) {
-    throw new Error(`Key ${keyId} not found in db`);
+    return;
   }
 
   if (!keyData.usages) {
@@ -107,17 +110,19 @@ export const getKey = async (keyId: string, userId: string) => {
     );
     return key;
   } catch (e) {
-    if (e instanceof Error) {
-      console.error("Failed to unwrap key:", e.message);
-    }
-    console.error(e);
+    console.error(e instanceof Error ? e.message : e);
+    return;
   }
 };
 
-export const getMasterKey = async (userId: string) => {
+export const getMasterKey = async (
+  userId: string,
+  shouldRedirect: boolean = true
+) => {
   const key = await getKey(userId, userId);
-  if (!key) {
-    throw new Error("Master key not found");
+  if (!key && shouldRedirect) {
+    window.location.href = "/dash/confirm-password";
+    return;
   }
   return key;
 };

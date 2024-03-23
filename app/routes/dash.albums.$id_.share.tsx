@@ -6,7 +6,6 @@ import {
   useLoaderData,
   useFetcher
 } from "@remix-run/react";
-import { XMarkIcon } from "@heroicons/react/24/solid";
 
 import { getAlbumDetails, shareAlbum } from "@/lib/services/album-service";
 import {
@@ -102,7 +101,7 @@ export default function Album() {
       albumKey = await getKey(album.id, user.id);
       if (!albumKey) {
         const mk = await getMasterKey(user.id);
-        albumKey = await unwrapAlbumKey(key.key, key.iv, mk);
+        albumKey = await unwrapAlbumKey(key.key, key.iv, mk!);
         storeKey(albumKey, album.id, user.id);
       }
 

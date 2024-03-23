@@ -57,7 +57,7 @@ export default function ConfirmKey() {
               setLoading(false);
               return;
             }
-            const currentKey = await getMasterKey(data.userId);
+            const currentKey = await getMasterKey(data.userId, false);
             if (currentKey) {
               await updateKey(mk, data.userId, data.userId);
               return navigate("/dash/home");

@@ -87,6 +87,19 @@ export const deriveMK = async (
   );
 };
 
+export const testMK = async (mk: CryptoKey, mkt: string, mktIv: string) => {
+  try {
+    await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: base64ToArray(mktIv) },
+      mk,
+      base64ToArray(mkt)
+    );
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
 export const createKeyPair = async () => {
   return await crypto.subtle.generateKey(
     {
@@ -97,22 +110,6 @@ export const createKeyPair = async () => {
     },
     true,
     ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
-  );
-};
-
-export const importPriKey = async (keyData: string) => {
-  let jsonKey: JsonWebKey;
-  try {
-    jsonKey = JSON.parse(keyData) as JsonWebKey;
-  } catch (e) {
-    throw new Error("Invalid key");
-  }
-  return await crypto.subtle.importKey(
-    "jwk",
-    jsonKey,
-    { name: "RSA-OAEP", hash: "SHA-256" },
-    true,
-    ["decrypt"]
   );
 };
 
@@ -137,23 +134,36 @@ export const importPubKey = async (keyData: string) => {
   }
 };
 
-export const decryptPriKey = async (
+export const unwrapPriKey = async (
   keyData: string,
-  decryptingKey: CryptoKey,
-  iv: string
-): Promise<{ key?: CryptoKey; error?: string }> => {
-  try {
-    const decryptedKey = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: base64ToArray(iv) },
-      decryptingKey,
-      base64ToArray(keyData)
-    );
+  iv: string,
+  decryptingKey: CryptoKey
+) => {
+  return await crypto.subtle.unwrapKey(
+    "pkcs8",
+    base64ToArray(keyData),
+    decryptingKey,
+    { name: "AES-GCM", iv: base64ToArray(iv) },
+    { name: "RSA-OAEP", hash: "SHA-256" },
+    true,
+    ["decrypt", "unwrapKey"]
+  );
+};
 
-    const key = await importPriKey(new TextDecoder().decode(decryptedKey));
-    return { key };
-  } catch (e) {
-    throw new Error("Wrong password");
-  }
+export const unwrapSharedKey = async (
+  prK: CryptoKey,
+  wrappedKey: string,
+  usages: KeyUsage[]
+) => {
+  return await crypto.subtle.unwrapKey(
+    "raw",
+    base64ToArray(wrappedKey),
+    prK,
+    { name: "RSA-OAEP" },
+    { name: "AES-GCM" },
+    true,
+    usages
+  );
 };
 
 export const createAlbumKey = async () => {

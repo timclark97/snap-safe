@@ -34,3 +34,13 @@ export const shareAlbumActionValidator = (fd: FormData) => {
     })
     .safeParse(data);
 };
+
+export const acceptAlbumInviteValidator = (fd: FormData) => {
+  const data = Object.fromEntries(fd.entries());
+  return z
+    .object({
+      key: z.string(),
+      iv: z.string()
+    })
+    .safeParse(data);
+};

@@ -48,9 +48,7 @@ export const emailRegisterStart = async (email: string) => {
     .values({
       metaData: { email, type: "register" }
     })
-    .returning()
-    .execute();
-
+    .returning();
   await sendEmail({
     to: email,
     subject: "SnapSafe Registration",
@@ -79,18 +77,15 @@ export const emailRegisterFinish = async (code: string) => {
   }
 
   const user = await sqlite.transaction(async (trx) => {
-    const [user] = await trx.insert(users).values({}).returning().execute();
+    const [user] = await trx.insert(users).values({}).returning();
 
-    await trx
-      .insert(authMethods)
-      .values({
-        userId: user.id,
-        type: "email",
-        value: email
-      })
-      .execute();
+    await trx.insert(authMethods).values({
+      userId: user.id,
+      type: "email",
+      value: email
+    });
 
-    await trx.delete(authCodes).where(eq(authCodes.id, code)).execute();
+    await trx.delete(authCodes).where(eq(authCodes.id, code));
 
     return user;
   });
@@ -114,9 +109,7 @@ export const emailSignInStart = async (email: string) => {
     .values({
       metaData: { email, type: "sign-in" }
     })
-    .returning()
-    .execute();
-
+    .returning();
   await sendEmail({
     to: email,
     subject: "SnapSafe Sign In",
@@ -145,7 +138,7 @@ export const emailSignInFinish = async (code: string) => {
     throw new Error("Email not registered");
   }
 
-  await sqlite.delete(authCodes).where(eq(authCodes.id, code)).execute();
+  await sqlite.delete(authCodes).where(eq(authCodes.id, code));
 
   return authMethod.user;
 };
@@ -159,7 +152,7 @@ export const googleRegister = async (sub: string, email?: string) => {
   }
 
   const user = await sqlite.transaction(async (trx) => {
-    const [user] = await trx.insert(users).values({}).returning().execute();
+    const [user] = await trx.insert(users).values({}).returning();
     type MethodType = typeof authMethods.$inferInsert;
     const methods: MethodType[] = [
       {
@@ -175,7 +168,7 @@ export const googleRegister = async (sub: string, email?: string) => {
         value: email
       });
     }
-    await trx.insert(authMethods).values(methods).execute();
+    await trx.insert(authMethods).values(methods);
 
     return user;
   });

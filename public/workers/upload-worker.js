@@ -298,7 +298,7 @@ var getKey = async (keyId, userId) => {
   const dbKey2 = await getDbKey(userId);
   const keyData = await db.get("ak", keyId);
   if (!keyData) {
-    throw new Error(`Key ${keyId} not found in db`);
+    return;
   }
   if (!keyData.usages) {
     throw new Error(`No usages found for key ${keyId}`);
@@ -322,10 +322,8 @@ var getKey = async (keyId, userId) => {
     );
     return key;
   } catch (e) {
-    if (e instanceof Error) {
-      console.error("Failed to unwrap key:", e.message);
-    }
-    console.error(e);
+    console.error(e instanceof Error ? e.message : e);
+    return;
   }
 };
 

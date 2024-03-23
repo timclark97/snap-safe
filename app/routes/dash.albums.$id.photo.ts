@@ -36,15 +36,12 @@ export async function action({ request, params }: ActionFunctionArgs) {
     });
   }
 
-  await sqlite
-    .insert(photos)
-    .values({
-      id: body.photoId,
-      iv: body.iv,
-      albumId,
-      userId: session.userId
-    })
-    .execute();
+  await sqlite.insert(photos).values({
+    id: body.photoId,
+    iv: body.iv,
+    albumId,
+    userId: session.userId
+  });
 
   const { url } = await createUploadRequest(body.photoId);
 

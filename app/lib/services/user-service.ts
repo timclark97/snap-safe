@@ -38,9 +38,7 @@ export const updateUser = async (
     .update(users)
     .set(data.data)
     .where(eq(users.id, id))
-    .returning()
-    .execute();
-
+    .returning();
   return user;
 };
 
@@ -49,9 +47,7 @@ export const getUserByEmail = async (email: string) => {
     .select()
     .from(authMethods)
     .where(and(eq(authMethods.value, email), eq(authMethods.type, "email")))
-    .innerJoin(users, eq(users.id, authMethods.userId))
-    .execute();
-
+    .innerJoin(users, eq(users.id, authMethods.userId));
   if (result.length === 0) {
     return null;
   }

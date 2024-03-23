@@ -140,6 +140,11 @@ export const albumInvites = sqliteTable("album_invites", {
   grantedBy: text("shared_by")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
+  permission: text("permission", {
+    enum: ["read", "write"]
+  })
+    .notNull()
+    .default("read"),
   albumId: text("album_id")
     .notNull()
     .references(() => albums.id, { onDelete: "cascade" }),

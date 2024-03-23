@@ -6,7 +6,7 @@ import { useNavigate, useLocation } from "@remix-run/react";
 
 import { requireSession } from "@/lib/services/session-service";
 import { Alert, DashHeader } from "@/components/common";
-import { getKey } from "@/lib/services/keydb-service";
+import { getMasterKey } from "@/lib/services/keydb-service";
 import { serializeUser } from "@/lib/services/user-service";
 import { SelfContextProvider } from "@/lib/contexts/self-context";
 import { UploadContextProvider } from "@/lib/contexts/upload-context";
@@ -37,7 +37,8 @@ export default function DashLayout() {
     ) {
       return;
     }
-    const key = await getKey(user.id, user.id);
+
+    const key = await getMasterKey(user.id);
 
     if (!key && pathname !== "/dash/confirm-password") {
       navigate("/dash/confirm-password");
