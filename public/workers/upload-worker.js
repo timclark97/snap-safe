@@ -251,11 +251,6 @@ var base64ToArray = (base64) => {
   return bytes;
 };
 
-// app/lib/helpers/logger.ts
-var debug = (message) => {
-  console.debug("DEBUG: " + message);
-};
-
 // app/lib/services/crypto-service.ts
 var createIv = () => crypto.getRandomValues(new Uint8Array(12));
 var dbKey;
@@ -263,41 +258,25 @@ var getDbKey = async (userId) => {
   if (dbKey) {
     return dbKey;
   }
-  debug("Importing dbKey");
-  let wrappingKeyMaterial;
-  try {
-    wrappingKeyMaterial = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(navigator.userAgent + userId),
-      { name: "PBKDF2" },
-      false,
-      ["deriveKey", "deriveBits"]
-    );
-  } catch (e) {
-    if (e instanceof Error) {
-      debug("Failed to import db key" + e.message);
-    }
-  }
-  if (wrappingKeyMaterial) {
-    try {
-      dbKey = await crypto.subtle.deriveKey(
-        {
-          name: "PBKDF2",
-          salt: new TextEncoder().encode(userId),
-          iterations: 6e5,
-          hash: "SHA-256"
-        },
-        wrappingKeyMaterial,
-        { name: "AES-GCM", length: 256 },
-        true,
-        ["unwrapKey", "wrapKey"]
-      );
-    } catch (e) {
-      if (e instanceof Error) {
-        debug("Failed to derive db key" + e.message);
-      }
-    }
-  }
+  const wrappingKeyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(navigator.userAgent + userId),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey", "deriveBits"]
+  );
+  dbKey = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: new TextEncoder().encode(userId),
+      iterations: 6e5,
+      hash: "SHA-256"
+    },
+    wrappingKeyMaterial,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["unwrapKey", "wrapKey"]
+  );
   return dbKey;
 };
 
@@ -307,7 +286,6 @@ var getDB = async () => {
   if (keyDb) {
     return keyDb;
   }
-  debug("Opening keydb");
   keyDb = await openDB("kdb", 1, {
     upgrade(db) {
       db.createObjectStore("ak");
@@ -320,8 +298,7 @@ var getKey = async (keyId, userId) => {
   const dbKey2 = await getDbKey(userId);
   const keyData = await db.get("ak", keyId);
   if (!keyData) {
-    debug(`No key found for ${keyId}`);
-    return;
+    throw new Error(`Key ${keyId} not found in db`);
   }
   if (!keyData.usages) {
     throw new Error(`No usages found for key ${keyId}`);
@@ -353,23 +330,29 @@ var getKey = async (keyId, userId) => {
 };
 
 // app/lib/workers/upload-worker.ts
+var sendMessage = (message) => {
+  postMessage(message);
+};
 onmessage = async (event) => {
-  postMessage({
+  sendMessage({
     id: event.data.id,
+    albumId: event.data.albumId,
     state: "preparing"
   });
   const data = event.data;
   if (!data.id || !data.albumId || !data.userId || !data.file) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "Missing required fields",
       state: "error"
     });
     return;
   }
   if (data.file.size > 1024 * 1024 * 10) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "File is too large",
       state: "error"
     });
@@ -377,15 +360,17 @@ onmessage = async (event) => {
   }
   const key = await getKey(data.albumId, data.userId);
   if (!key) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "You don't have permission to upload to this album",
       state: "error"
     });
     return;
   }
-  postMessage({
+  sendMessage({
     id: data.id,
+    albumId: event.data.albumId,
     state: "encrypting"
   });
   const iv = createIv();
@@ -394,8 +379,9 @@ onmessage = async (event) => {
     key,
     await data.file.arrayBuffer()
   );
-  postMessage({
+  sendMessage({
     id: data.id,
+    albumId: event.data.albumId,
     state: "preparing_upload"
   });
   const resp = await fetch(`/dash/albums/${data.albumId}/upload-url`, {
@@ -403,16 +389,18 @@ onmessage = async (event) => {
     body: JSON.stringify({ photoId: data.id })
   });
   if (!resp.ok) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "Failed to create upload request",
       state: "error"
     });
     return;
   }
   const { url } = await resp.json();
-  postMessage({
+  sendMessage({
     id: data.id,
+    albumId: event.data.albumId,
     state: "uploading"
   });
   const uploadResp = await fetch(url, {
@@ -423,15 +411,17 @@ onmessage = async (event) => {
     }
   });
   if (!uploadResp.ok) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "Failed to upload file",
       state: "error"
     });
     return;
   }
-  postMessage({
+  sendMessage({
     id: data.id,
+    albumId: event.data.albumId,
     state: "storing"
   });
   const storeRequest = await fetch(`/dash/albums/${data.albumId}/photo`, {
@@ -439,15 +429,17 @@ onmessage = async (event) => {
     body: JSON.stringify({ photoId: data.id, iv: arrayToBase64(iv) })
   });
   if (!storeRequest.ok) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "Failed to store photo",
       state: "error"
     });
     return;
   }
-  postMessage({
+  sendMessage({
     id: data.id,
+    albumId: event.data.albumId,
     state: "done"
   });
   return;

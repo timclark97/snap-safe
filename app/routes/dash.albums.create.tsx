@@ -28,7 +28,6 @@ export async function action({ request }: ActionFunctionArgs) {
   const session = await requireSession(request);
   const validator = createAlbumValidator(await request.formData());
   if (!validator.success) {
-    console.log(validator.error.issues);
     throw json({ error: "Invalid request. Try again." }, { status: 400 });
   }
 

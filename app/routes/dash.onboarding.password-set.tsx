@@ -22,7 +22,6 @@ import { requireSession } from "@/lib/services/session-service";
 import { Button, Input, Alert, FormCard } from "@/components/common";
 import PasswordChecker from "@/components/PasswordChecker";
 import { storeKey } from "@/lib/services/keydb-service";
-import { debug } from "@/lib/helpers/logger";
 import { setPasswordValidator } from "@/lib/validators/onboarding-validators";
 
 export const meta: MetaFunction = () => {
@@ -40,7 +39,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const { user } = await requireSession(request);
 
   if (user.mkS) {
-    debug(`User ${user.id} has already created a password`);
     return redirect("/dash/home");
   }
 

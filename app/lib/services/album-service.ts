@@ -1,4 +1,13 @@
-import { sqlite, albumKeys, albums, albumPermissions } from "@/lib/sqlite";
+import { json } from "@remix-run/node";
+import { eq, and } from "drizzle-orm";
+
+import {
+  sqlite,
+  albumKeys,
+  albums,
+  albumPermissions,
+  photos
+} from "@/lib/sqlite";
 
 export const insertAlbum = async ({
   userId,
@@ -73,4 +82,43 @@ export const hasAlbumPermission = async (
   }
 
   return access.permission === permission;
+};
+
+export const loadAlbum = async (userId: string, albumId: string) => {
+  const queryResult = await sqlite
+    .select()
+    .from(albums)
+    .where(eq(albums.id, albumId))
+    .innerJoin(
+      albumPermissions,
+      and(
+        eq(albumPermissions.albumId, albums.id),
+        eq(albumPermissions.userId, userId)
+      )
+    )
+    .innerJoin(
+      albumKeys,
+      and(eq(albumKeys.albumId, albums.id), eq(albumKeys.userId, userId))
+    )
+    .execute();
+
+  if (queryResult.length === 0) {
+    throw json({ message: "Album not found" }, { status: 404 });
+  }
+
+  const [result] = queryResult;
+
+  const albumPhotos = await sqlite
+    .select()
+    .from(photos)
+    .where(eq(photos.albumId, result.albums.id))
+    .limit(50)
+    .execute();
+
+  return {
+    album: result.albums,
+    permission: result.album_permissions,
+    photos: albumPhotos,
+    key: result.album_keys
+  };
 };

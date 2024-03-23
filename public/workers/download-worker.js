@@ -243,52 +243,31 @@ var base64ToArray = (base64) => {
   return bytes;
 };
 
-// app/lib/helpers/logger.ts
-var debug = (message) => {
-  console.debug("DEBUG: " + message);
-};
-
 // app/lib/services/crypto-service.ts
 var dbKey;
 var getDbKey = async (userId) => {
   if (dbKey) {
     return dbKey;
   }
-  debug("Importing dbKey");
-  let wrappingKeyMaterial;
-  try {
-    wrappingKeyMaterial = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(navigator.userAgent + userId),
-      { name: "PBKDF2" },
-      false,
-      ["deriveKey", "deriveBits"]
-    );
-  } catch (e) {
-    if (e instanceof Error) {
-      debug("Failed to import db key" + e.message);
-    }
-  }
-  if (wrappingKeyMaterial) {
-    try {
-      dbKey = await crypto.subtle.deriveKey(
-        {
-          name: "PBKDF2",
-          salt: new TextEncoder().encode(userId),
-          iterations: 6e5,
-          hash: "SHA-256"
-        },
-        wrappingKeyMaterial,
-        { name: "AES-GCM", length: 256 },
-        true,
-        ["unwrapKey", "wrapKey"]
-      );
-    } catch (e) {
-      if (e instanceof Error) {
-        debug("Failed to derive db key" + e.message);
-      }
-    }
-  }
+  const wrappingKeyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(navigator.userAgent + userId),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey", "deriveBits"]
+  );
+  dbKey = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: new TextEncoder().encode(userId),
+      iterations: 6e5,
+      hash: "SHA-256"
+    },
+    wrappingKeyMaterial,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["unwrapKey", "wrapKey"]
+  );
   return dbKey;
 };
 
@@ -298,7 +277,6 @@ var getDB = async () => {
   if (keyDb) {
     return keyDb;
   }
-  debug("Opening keydb");
   keyDb = await openDB("kdb", 1, {
     upgrade(db) {
       db.createObjectStore("ak");
@@ -311,8 +289,7 @@ var getKey = async (keyId, userId) => {
   const dbKey2 = await getDbKey(userId);
   const keyData = await db.get("ak", keyId);
   if (!keyData) {
-    debug(`No key found for ${keyId}`);
-    return;
+    throw new Error(`Key ${keyId} not found in db`);
   }
   if (!keyData.usages) {
     throw new Error(`No usages found for key ${keyId}`);

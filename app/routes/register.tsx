@@ -1,10 +1,11 @@
 import { useFetcher, useLoaderData, useRouteError } from "@remix-run/react";
-import type {
+import {
   ActionFunctionArgs,
   LoaderFunctionArgs,
-  MetaFunction
+  MetaFunction,
+  redirect,
+  json
 } from "@remix-run/node";
-import { redirect, json } from "@remix-run/node";
 
 import { getSessionId } from "@/lib/services/session-service";
 import SimpleHeader from "@/components/common/SimpleHeader";
@@ -21,6 +22,7 @@ import {
   getAuthOptions
 } from "@/lib/services/auth-service";
 import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";
+import { emailAuthValidator } from "@/lib/validators/auth-validators";
 
 export const meta: MetaFunction = () => {
   return [{ title: "SnapSafe | Register" }];
@@ -40,12 +42,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const fd = await request.formData();
-  const email = fd.get("email")?.toString();
-  if (!email) {
-    throw new Error("Email is required");
+  const validator = emailAuthValidator(await request.formData());
+  if (!validator.success) {
+    throw json({ error: "Invalid email" }, { status: 400 });
   }
-  await emailRegisterStart(email);
+
+  await emailRegisterStart(validator.data);
   return json({ success: true });
 }
 

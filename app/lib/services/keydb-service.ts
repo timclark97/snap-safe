@@ -2,7 +2,6 @@ import { openDB, DBSchema, IDBPDatabase } from "idb";
 
 import { bufferToBase64, base64ToArray } from "../helpers/binary-helpers";
 import { getDbKey } from "./crypto-service";
-import { debug } from "../helpers/logger";
 
 interface KeyDB extends DBSchema {
   ak: {
@@ -21,7 +20,6 @@ const getDB = async () => {
   if (keyDb) {
     return keyDb;
   }
-  debug("Opening keydb");
   keyDb = await openDB<KeyDB>("kdb", 1, {
     upgrade(db) {
       db.createObjectStore("ak");
@@ -37,26 +35,20 @@ export const storeKey = async (
 ) => {
   const db = await getDB();
   const dbKey = await getDbKey(userId);
-  try {
-    const keyData = await crypto.subtle.wrapKey("raw", key, dbKey, {
-      name: "AES-GCM",
-      iv: new TextEncoder().encode(keyId + userId)
-    });
+  const keyData = await crypto.subtle.wrapKey("raw", key, dbKey, {
+    name: "AES-GCM",
+    iv: new TextEncoder().encode(keyId + userId)
+  });
 
-    await db.add(
-      "ak",
-      {
-        data: bufferToBase64(keyData),
-        setOn: new Date().getTime(),
-        usages: key.usages
-      },
-      keyId
-    );
-  } catch (e) {
-    if (e instanceof Error) {
-      debug("Failed to wrap key" + e.message);
-    }
-  }
+  await db.add(
+    "ak",
+    {
+      data: bufferToBase64(keyData),
+      setOn: new Date().getTime(),
+      usages: key.usages
+    },
+    keyId
+  );
 };
 
 export const updateKey = async (
@@ -87,8 +79,7 @@ export const getKey = async (keyId: string, userId: string) => {
   const dbKey = await getDbKey(userId);
   const keyData = await db.get("ak", keyId);
   if (!keyData) {
-    debug(`No key found for ${keyId}`);
-    return;
+    throw new Error(`Key ${keyId} not found in db`);
   }
 
   if (!keyData.usages) {

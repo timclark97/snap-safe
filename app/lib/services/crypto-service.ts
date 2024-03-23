@@ -1,6 +1,5 @@
 /* eslint-disable import/exports-last */
 import { base64ToArray, bufferToBase64 } from "@/lib/helpers/binary-helpers";
-import { debug } from "../helpers/logger";
 
 type SaltType = ArrayBuffer | Uint8Array | string;
 
@@ -23,43 +22,27 @@ export const getDbKey = async (userId: string) => {
   if (dbKey) {
     return dbKey;
   }
-  debug("Importing dbKey");
-  let wrappingKeyMaterial: CryptoKey | undefined;
 
-  try {
-    wrappingKeyMaterial = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(navigator.userAgent + userId),
-      { name: "PBKDF2" },
-      false,
-      ["deriveKey", "deriveBits"]
-    );
-  } catch (e) {
-    if (e instanceof Error) {
-      debug("Failed to import db key" + e.message);
-    }
-  }
+  const wrappingKeyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(navigator.userAgent + userId),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey", "deriveBits"]
+  );
 
-  if (wrappingKeyMaterial) {
-    try {
-      dbKey = await crypto.subtle.deriveKey(
-        {
-          name: "PBKDF2",
-          salt: new TextEncoder().encode(userId),
-          iterations: 600000,
-          hash: "SHA-256"
-        },
-        wrappingKeyMaterial,
-        { name: "AES-GCM", length: 256 },
-        true,
-        ["unwrapKey", "wrapKey"]
-      );
-    } catch (e) {
-      if (e instanceof Error) {
-        debug("Failed to derive db key" + e.message);
-      }
-    }
-  }
+  dbKey = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: new TextEncoder().encode(userId),
+      iterations: 600000,
+      hash: "SHA-256"
+    },
+    wrappingKeyMaterial,
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["unwrapKey", "wrapKey"]
+  );
 
   return dbKey!;
 };

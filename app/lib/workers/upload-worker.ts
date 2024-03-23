@@ -2,6 +2,40 @@ import { getKey } from "../services/keydb-service";
 import { createIv } from "../services/crypto-service";
 import { arrayToBase64 } from "../helpers/binary-helpers";
 
+export type UploadWorkerMessageUpdate = {
+  id: string;
+  albumId: string;
+  state:
+    | "pending"
+    | "preparing"
+    | "encrypting"
+    | "preparing_upload"
+    | "uploading"
+    | "storing";
+};
+
+export type UploadWorkerMessageError = {
+  id: string;
+  albumId: string;
+  error: string;
+  state: "error";
+};
+
+export type UploadWorkerMessageSuccess = {
+  id: string;
+  albumId: string;
+  state: "done";
+};
+
+export type UploadWorkerMessage =
+  | UploadWorkerMessageUpdate
+  | UploadWorkerMessageError
+  | UploadWorkerMessageSuccess;
+
+const sendMessage = (message: UploadWorkerMessage) => {
+  postMessage(message);
+};
+
 onmessage = async (event: {
   data: {
     id: string;
@@ -10,23 +44,26 @@ onmessage = async (event: {
     file: File;
   };
 }) => {
-  postMessage({
+  sendMessage({
     id: event.data.id,
+    albumId: event.data.albumId,
     state: "preparing"
   });
 
   const data = event.data;
   if (!data.id || !data.albumId || !data.userId || !data.file) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "Missing required fields",
       state: "error"
     });
     return;
   }
   if (data.file.size > 1024 * 1024 * 10) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "File is too large",
       state: "error"
     });
@@ -35,16 +72,18 @@ onmessage = async (event: {
 
   const key = await getKey(data.albumId, data.userId);
   if (!key) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "You don't have permission to upload to this album",
       state: "error"
     });
     return;
   }
 
-  postMessage({
+  sendMessage({
     id: data.id,
+    albumId: event.data.albumId,
     state: "encrypting"
   });
 
@@ -55,8 +94,9 @@ onmessage = async (event: {
     await data.file.arrayBuffer()
   );
 
-  postMessage({
+  sendMessage({
     id: data.id,
+    albumId: event.data.albumId,
     state: "preparing_upload"
   });
 
@@ -66,8 +106,9 @@ onmessage = async (event: {
   });
 
   if (!resp.ok) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "Failed to create upload request",
       state: "error"
     });
@@ -76,8 +117,9 @@ onmessage = async (event: {
 
   const { url } = await resp.json();
 
-  postMessage({
+  sendMessage({
     id: data.id,
+    albumId: event.data.albumId,
     state: "uploading"
   });
 
@@ -90,16 +132,18 @@ onmessage = async (event: {
   });
 
   if (!uploadResp.ok) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "Failed to upload file",
       state: "error"
     });
     return;
   }
 
-  postMessage({
+  sendMessage({
     id: data.id,
+    albumId: event.data.albumId,
     state: "storing"
   });
 
@@ -109,16 +153,18 @@ onmessage = async (event: {
   });
 
   if (!storeRequest.ok) {
-    postMessage({
+    sendMessage({
       id: data.id,
+      albumId: event.data.albumId,
       error: "Failed to store photo",
       state: "error"
     });
     return;
   }
 
-  postMessage({
+  sendMessage({
     id: data.id,
+    albumId: event.data.albumId,
     state: "done"
   });
 

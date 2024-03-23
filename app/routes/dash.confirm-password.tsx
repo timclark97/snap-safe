@@ -6,7 +6,11 @@ import { useNavigate, useLoaderData } from "@remix-run/react";
 import { requireSession } from "@/lib/services/session-service";
 import { Button, FormCard, Input, Alert } from "@/components/common";
 import { deriveMK } from "@/lib/services/crypto-service";
-import { getKey, updateKey, storeKey } from "@/lib/services/keydb-service";
+import {
+  getMasterKey,
+  updateKey,
+  storeKey
+} from "@/lib/services/keydb-service";
 import { base64ToArray } from "@/lib/helpers/binary-helpers";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -28,11 +32,12 @@ export default function ConfirmKey() {
   const [error, setError] = useState<string | null>(null);
   const data = useLoaderData<typeof loader>();
   const navigate = useNavigate();
+
   return (
     <div>
       <FormCard
         header="Enter your password"
-        subHeader="You are required to re-enter your password every 2 weeks and every time you sign in"
+        subHeader="You need to re-enter your password every 2 weeks and every time you sign in"
       >
         <form
           onSubmit={async (e) => {
@@ -52,7 +57,7 @@ export default function ConfirmKey() {
               setLoading(false);
               return;
             }
-            const currentKey = await getKey(data.userId, data.userId);
+            const currentKey = await getMasterKey(data.userId);
             if (currentKey) {
               await updateKey(mk, data.userId, data.userId);
               return navigate("/dash/home");

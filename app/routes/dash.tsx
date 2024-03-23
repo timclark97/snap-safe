@@ -8,7 +8,6 @@ import { requireSession } from "@/lib/services/session-service";
 import { Alert, DashHeader } from "@/components/common";
 import { getKey } from "@/lib/services/keydb-service";
 import { serializeUser } from "@/lib/services/user-service";
-import { debug } from "@/lib/helpers/logger";
 import { SelfContextProvider } from "@/lib/contexts/self-context";
 import { UploadContextProvider } from "@/lib/contexts/upload-context";
 import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";
@@ -41,7 +40,6 @@ export default function DashLayout() {
     const key = await getKey(user.id, user.id);
 
     if (!key && pathname !== "/dash/confirm-password") {
-      debug("Key not stored in keydb. Redirecting to confirm-password.");
       navigate("/dash/confirm-password");
       return;
     }
