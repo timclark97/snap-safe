@@ -13,3 +13,24 @@ export const createAlbumValidator = (fd: FormData) => {
     })
     .safeParse(data);
 };
+
+export const shareAlbumLoadValidator = (sp: URLSearchParams) => {
+  const data = Object.fromEntries(sp.entries());
+  return z
+    .object({
+      email: z.string().optional(),
+      grantedPermission: z.enum(["read", "write"]).optional()
+    })
+    .safeParse(data);
+};
+
+export const shareAlbumActionValidator = (fd: FormData) => {
+  const data = Object.fromEntries(fd.entries());
+  return z
+    .object({
+      email: z.string().email({ message: "Invalid email address" }),
+      key: z.string(),
+      grantedPermission: z.enum(["read", "write"])
+    })
+    .safeParse(data);
+};

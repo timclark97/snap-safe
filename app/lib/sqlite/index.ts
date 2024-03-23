@@ -19,6 +19,7 @@ export {
   authCodes,
   albumKeys,
   albums,
+  albumInvites,
   albumPermissions,
   photos
 } from "./schema";

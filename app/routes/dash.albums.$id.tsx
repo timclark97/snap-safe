@@ -17,16 +17,17 @@ import { storeKey, getKey, getMasterKey } from "@/lib/services/keydb-service";
 import { useSelf } from "@/lib/contexts/self-context";
 import { useUpload } from "@/lib/contexts/upload-context";
 import { unwrapAlbumKey } from "@/lib/services/crypto-service";
-import { loadAlbum } from "@/lib/services/album-service";
+import { getAlbumDetails } from "@/lib/services/album-service";
+import { listPhotos } from "@/lib/services/photo-service";
 
 import { generateId } from "@/lib/helpers/id-generator";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const session = await requireSession(request);
   const albumId = params.id as string;
-  const result = await loadAlbum(session.user.id, albumId);
-
-  return json(result);
+  const result = await getAlbumDetails(session.user.id, albumId);
+  const photos = await listPhotos(albumId);
+  return json({ ...result, photos });
 }
 
 export default function Album() {
@@ -74,7 +75,7 @@ export default function Album() {
         <h1>{album.name}</h1>
         <div className="flex gap-2 items-center">
           {permission.permission === "owner" && (
-            <LinkButton size="sm" to={`/dash/albums/${album.id}/share`}>
+            <LinkButton to={`/dash/albums/${album.id}/share`}>
               <ShareIcon className="h-4 w-4" />
             </LinkButton>
           )}
@@ -83,7 +84,7 @@ export default function Album() {
             <div>
               <label
                 htmlFor="files"
-                className={`${colors.primary} ${sizes.sm} flex items-center font-medium text-sm cursor-pointer rounded-md`}
+                className={`${colors.primary} ${sizes.base} flex items-center font-medium text-sm cursor-pointer rounded-md`}
               >
                 Upload
                 <ArrowUpTrayIcon className="h-4 w-4 inline-block ml-2 stroke-2" />

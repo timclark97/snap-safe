@@ -6,8 +6,10 @@ import {
   albumKeys,
   albums,
   albumPermissions,
-  photos
+  albumInvites
 } from "@/lib/sqlite";
+import { getUserByEmail } from "./user-service";
+import { sendEmail } from "./email-service";
 
 export const insertAlbum = async ({
   userId,
@@ -84,7 +86,7 @@ export const hasAlbumPermission = async (
   return access.permission === permission;
 };
 
-export const loadAlbum = async (userId: string, albumId: string) => {
+export const getAlbumDetails = async (userId: string, albumId: string) => {
   const queryResult = await sqlite
     .select()
     .from(albums)
@@ -108,17 +110,59 @@ export const loadAlbum = async (userId: string, albumId: string) => {
 
   const [result] = queryResult;
 
-  const albumPhotos = await sqlite
-    .select()
-    .from(photos)
-    .where(eq(photos.albumId, result.albums.id))
-    .limit(50)
-    .execute();
-
   return {
     album: result.albums,
     permission: result.album_permissions,
-    photos: albumPhotos,
     key: result.album_keys
   };
+};
+
+export const shareAlbum = async (args: {
+  userId: string;
+  albumId: string;
+  email: string;
+  wrappedKey: string;
+  permission: "read" | "write";
+}) => {
+  const { userId, albumId, email, wrappedKey, permission } = args;
+  const permissions = await hasAlbumPermission(userId, albumId, "owner");
+  if (!permissions) {
+    throw json(
+      { message: "You do not have permission to share this album" },
+      { status: 403 }
+    );
+  }
+
+  const userToShare = await getUserByEmail(email);
+
+  if (!userToShare) {
+    throw json({ message: "User not found" }, { status: 404 });
+  }
+
+  const inviteId = await sqlite.transaction(async (db) => {
+    const [{ id }] = await db
+      .insert(albumInvites)
+      .values({
+        albumId,
+        grantedBy: userId,
+        userId: userToShare.id,
+        wk: wrappedKey
+      })
+      .returning()
+      .execute();
+
+    await db.insert(albumPermissions).values({
+      albumId,
+      userId: userToShare.id,
+      permission,
+      grantedBy: userId
+    });
+    return id;
+  });
+
+  sendEmail({
+    to: email,
+    subject: `${userToShare.firstName ? `${userToShare.firstName}, you` : "You"} have been invited to new album`,
+    text: `You have been invited to a new album.\nClick here to accept: ${process.env.SITE_URL}/dash/accept-invite/${inviteId}`
+  });
 };

@@ -43,6 +43,13 @@
       "when": 1710766583615,
       "tag": "0005_silly_ultimo",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1711225923504,
+      "tag": "0006_faithful_venom",
+      "breakpoints": true
     }
   ]
 }

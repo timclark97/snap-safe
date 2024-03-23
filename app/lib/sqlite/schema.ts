@@ -129,6 +129,23 @@ export const albumPermissions = sqliteTable("album_permissions", {
   }).notNull()
 });
 
+export const albumInvites = sqliteTable("album_invites", {
+  id: text("id").primaryKey().$default(generateId),
+  createdOn: integer("created_on", { mode: "timestamp_ms" })
+    .notNull()
+    .$default(() => new Date()),
+  userId: text("shared_to")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  grantedBy: text("shared_by")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  albumId: text("album_id")
+    .notNull()
+    .references(() => albums.id, { onDelete: "cascade" }),
+  wk: text("wk").notNull()
+});
+
 // Relations
 //
 //

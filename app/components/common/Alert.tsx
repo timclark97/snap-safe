@@ -16,7 +16,7 @@ const variants = {
     text: "text-red-700"
   },
   warning: {
-    defaultHeader: "Something went wrong",
+    defaultHeader: "Heads up",
     bg: "bg-yellow-50 border border-yellow-100",
     icon: ExclamationTriangleIcon,
     iconColor: "text-yellow-500",

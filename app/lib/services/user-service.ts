@@ -45,11 +45,6 @@ export const updateUser = async (
 };
 
 export const getUserByEmail = async (email: string) => {
-  const validation = z.string().email().safeParse(email);
-  if (!validation.success) {
-    throw new Error("Invalid email");
-  }
-
   const result = await sqlite
     .select()
     .from(authMethods)
