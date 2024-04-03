@@ -1,10 +1,8 @@
 import { build } from "esbuild";
 
 await build({
-  entryPoints: [
-    "app/lib/workers/upload-worker.ts",
-    "app/lib/workers/download-worker.ts"
-  ],
+  entryPoints: ["app/lib/workers/upload-worker.ts", "app/lib/workers/download-worker.ts"],
   bundle: true,
-  outdir: "public/workers"
+  outdir: "public/workers",
+  format: "esm"
 });

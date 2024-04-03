@@ -28,11 +28,7 @@ const getDB = async () => {
   return keyDb;
 };
 
-export const storeKey = async (
-  key: CryptoKey,
-  keyId: string,
-  userId: string
-) => {
+export const storeKey = async (key: CryptoKey, keyId: string, userId: string) => {
   const db = await getDB();
   const dbKey = await getDbKey(userId);
   if (!dbKey) {
@@ -54,11 +50,7 @@ export const storeKey = async (
   );
 };
 
-export const updateKey = async (
-  key: CryptoKey,
-  keyId: string,
-  userId: string
-) => {
+export const updateKey = async (key: CryptoKey, keyId: string, userId: string) => {
   const db = await getDB();
   const dbKey = await getDbKey(userId);
   const keyData = await crypto.subtle.wrapKey("raw", key, dbKey, {
@@ -115,15 +107,9 @@ export const getKey = async (keyId: string, userId: string) => {
   }
 };
 
-export const getMasterKey = async (
-  userId: string,
-  shouldRedirect: boolean = true
-) => {
+export const getMasterKey = async (userId: string) => {
   const key = await getKey(userId, userId);
-  if (!key && shouldRedirect) {
-    window.location.href = "/dash/confirm-password";
-    return;
-  }
+
   return key;
 };
 

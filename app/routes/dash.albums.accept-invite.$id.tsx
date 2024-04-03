@@ -1,19 +1,9 @@
 import { useEffect, useState } from "react";
 import { LoaderFunctionArgs, ActionFunctionArgs, json } from "@remix-run/node";
-import {
-  useLoaderData,
-  useFetcher,
-  useRouteError,
-  useNavigate
-} from "@remix-run/react";
+import { useLoaderData, useFetcher, useRouteError, useNavigate } from "@remix-run/react";
 import { eq, and } from "drizzle-orm";
 
-import {
-  sqlite,
-  albumInvites,
-  albumPermissions,
-  albumKeys
-} from "@/lib/sqlite";
+import { sqlite, albumInvites, albumPermissions, albumKeys } from "@/lib/sqlite";
 import { requireSession } from "@/lib/services/session-service";
 import { FormCard, Button, Input, Alert } from "@/components/common";
 import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";
@@ -27,6 +17,7 @@ import {
 import { useSelf } from "@/lib/contexts/self-context";
 import { storeKey } from "@/lib/services/keydb-service";
 import { arrayToBase64, bufferToBase64 } from "@/lib/helpers/binary-helpers";
+import { getAlbumInvite } from "@/lib/services/album-service";
 import { acceptAlbumInviteValidator } from "@/lib/validators/album-validators";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -45,22 +36,20 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     );
   }
   const id = params.id as string;
+  const inviteData = await getAlbumInvite(id, session.userId);
 
-  const invite = await sqlite
-    .select()
-    .from(albumInvites)
-    .where(
-      and(eq(albumInvites.id, id), eq(albumInvites.userId, session.userId))
-    );
-
-  if (!invite.length) {
+  if (!inviteData) {
     throw json({ error: "Invite not found" }, { status: 404 });
   }
 
+  const { invite, album, grantedBy } = inviteData;
+
   return json({
-    inviteKey: invite[0].wk,
-    albumId: invite[0].albumId,
-    grantedPermission: invite[0].permission,
+    inviteKey: invite.wk,
+    albumId: album.id,
+    albumName: album.name,
+    grantedPermission: invite.permission,
+    grantedBy: grantedBy.firstName,
     prK: session.user.prK,
     prKIv: session.user.prKIv,
     mkS: session.user.mkS,
@@ -81,9 +70,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
   const invite = await sqlite
     .select()
     .from(albumInvites)
-    .where(
-      and(eq(albumInvites.id, id), eq(albumInvites.userId, session.userId))
-    );
+    .where(and(eq(albumInvites.id, id), eq(albumInvites.userId, session.userId)));
 
   if (!invite.length) {
     throw json({ error: "Invite not found" }, { status: 404 });
@@ -133,7 +120,7 @@ export default function AcceptInvite() {
     const usages: KeyUsage[] =
       data.grantedPermission === "read" ? ["decrypt"] : ["encrypt", "decrypt"];
     const albumKey = await unwrapSharedKey(pk, data.inviteKey, usages);
-    // await storeKey(albumKey, data.albumId, self.id);
+    await storeKey(albumKey, data.albumId, self.id);
 
     const { wrappedKey, iv } = await wrapAlbumKey(albumKey, mk);
 
@@ -145,7 +132,7 @@ export default function AcceptInvite() {
 
   return (
     <FormCard
-      header="Accept Invitation"
+      header={`${data.grantedBy} has invited you to join the album "${data.albumName}"`}
       subHeader="Enter your password to accept the invitation"
     >
       <form onSubmit={onSubmit}>

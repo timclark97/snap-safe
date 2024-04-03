@@ -6,7 +6,8 @@ import {
   albumKeys,
   albums,
   albumPermissions,
-  albumInvites
+  albumInvites,
+  users
 } from "@/lib/sqlite";
 import { getUserByEmail } from "./user-service";
 import { sendEmail } from "./email-service";
@@ -60,8 +61,7 @@ export const hasAlbumPermission = async (
   permission: "read" | "write" | "owner"
 ) => {
   const access = await sqlite.query.albumPermissions.findFirst({
-    where: (ap, { and, eq }) =>
-      and(eq(ap.albumId, albumId), eq(ap.userId, userId))
+    where: (ap, { and, eq }) => and(eq(ap.albumId, albumId), eq(ap.userId, userId))
   });
 
   if (!access) {
@@ -86,10 +86,7 @@ export const getAlbumDetails = async (userId: string, albumId: string) => {
     .where(eq(albums.id, albumId))
     .innerJoin(
       albumPermissions,
-      and(
-        eq(albumPermissions.albumId, albums.id),
-        eq(albumPermissions.userId, userId)
-      )
+      and(eq(albumPermissions.albumId, albums.id), eq(albumPermissions.userId, userId))
     )
     .innerJoin(
       albumKeys,
@@ -145,4 +142,25 @@ export const shareAlbum = async (args: {
     subject: `${userToShare.firstName ? `${userToShare.firstName}, you` : "You"} have been invited to new album`,
     text: `You have been invited to a new album.\nClick here to accept: ${process.env.SITE_URL}/dash/albums/accept-invite/${id}`
   });
+};
+
+export const getAlbumInvite = async (inviteId: string, userId: string) => {
+  const result = await sqlite
+    .select()
+    .from(albumInvites)
+    .where(and(eq(albumInvites.id, inviteId), eq(albumInvites.userId, userId)))
+    .innerJoin(albums, eq(albums.id, albumInvites.albumId))
+    .innerJoin(users, eq(users.id, albumInvites.grantedBy));
+
+  if (result.length === 0) {
+    return undefined;
+  }
+
+  const [{ album_invites, albums: album, users: gratedBy }] = result;
+
+  return {
+    invite: album_invites,
+    album,
+    grantedBy: gratedBy
+  };
 };
