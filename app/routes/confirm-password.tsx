@@ -13,7 +13,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const { user } = await requireSession(request);
 
   if (!user?.mkS || !user?.mkT || !user?.mkTIv) {
-    return redirect("/dash/onboarding/password");
+    return redirect("/onboarding/password");
   }
   return json({
     userId: user!.id,
@@ -37,33 +37,41 @@ export default function ConfirmKey() {
       >
         <form
           onSubmit={async (e) => {
-            setLoading(true);
-            e.preventDefault();
-            const fd = new FormData(e.currentTarget);
-            const password = fd.get("password") as string;
-            const mk = await deriveMK(data.userId, password, data.mks);
             try {
-              await window.crypto.subtle.decrypt(
-                { name: "AES-GCM", iv: base64ToArray(data.mkTIv) },
-                mk,
-                base64ToArray(data.mkT)
-              );
+              setLoading(true);
+              e.preventDefault();
+
+              const fd = new FormData(e.currentTarget);
+              const password = fd.get("password") as string;
+              const mk = await deriveMK(data.userId, password, data.mks);
+              try {
+                await window.crypto.subtle.decrypt(
+                  { name: "AES-GCM", iv: base64ToArray(data.mkTIv) },
+                  mk,
+                  base64ToArray(data.mkT)
+                );
+              } catch (e) {
+                setError("Wrong password");
+                setLoading(false);
+                return;
+              }
+
+              const currentKey = await getMasterKey(data.userId);
+              if (currentKey) {
+                await updateKey(mk, data.userId, data.userId);
+                return (window.location.href = "/");
+              }
+              await storeKey(mk, data.userId, data.userId);
+              return (window.location.href = "/");
             } catch (e) {
-              setError("Wrong password");
+              console.error(e);
+              setError(`An error occurred: ${e instanceof Error ? e.message : e}`);
               setLoading(false);
-              return;
             }
-            const currentKey = await getMasterKey(data.userId);
-            if (currentKey) {
-              await updateKey(mk, data.userId, data.userId);
-              return navigate("/dash/home");
-            }
-            await storeKey(mk, data.userId, data.userId);
-            navigate("/dash/home");
           }}
         >
           <fieldset className="grid gap-6" disabled={loading}>
-            <Alert variant="error" header="Uh Oh" dismissible>
+            <Alert variant="error" header="Uh Oh">
               {error}
             </Alert>
             <Input name="password" label="Password" type="password" />

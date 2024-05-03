@@ -8,19 +8,9 @@ import {
 } from "@remix-run/node";
 
 import { getSessionId } from "@/lib/services/session-service";
-import SimpleHeader from "@/components/common/SimpleHeader";
-import {
-  Alert,
-  StyledLink,
-  Button,
-  Input,
-  FormCard
-} from "@/components/common";
+import { Alert, StyledLink, Button, Input, FormCard } from "@/components/common";
 import GoogleButton from "@/components/GoogleButton";
-import {
-  emailRegisterStart,
-  getAuthOptions
-} from "@/lib/services/auth-service";
+import { emailRegisterStart, getAuthOptions } from "@/lib/services/auth-service";
 import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";
 import { emailAuthValidator } from "@/lib/validators/auth-validators";
 
@@ -31,12 +21,10 @@ export const meta: MetaFunction = () => {
 export async function loader({ request }: LoaderFunctionArgs) {
   const sessionId = await getSessionId(request);
   if (sessionId) {
-    return redirect("/dash");
+    return redirect("/");
   }
 
-  const error = new URL(request.url).searchParams
-    .get("error_message")
-    ?.toString();
+  const error = new URL(request.url).searchParams.get("error_message")?.toString();
 
   return json({ options: getAuthOptions("register"), error });
 }
@@ -57,23 +45,15 @@ export default function Register() {
 
   return (
     <div>
-      <SimpleHeader />
       <FormCard header="Create Your Account">
         <div className="grid gap-6">
           {fetcher.data?.success ? (
-            <Alert variant="success">
-              Check your email for a link to continue
-            </Alert>
+            <Alert variant="success">Check your email for a link to continue</Alert>
           ) : (
             <>
               {options.email.on && (
                 <fetcher.Form method="POST" className="grid gap-4">
-                  <Input
-                    name="email"
-                    autoComplete="email"
-                    label="Email"
-                    type="email"
-                  />
+                  <Input name="email" autoComplete="email" label="Email" type="email" />
                   <Button type="submit">Continue with Email</Button>
                 </fetcher.Form>
               )}
@@ -84,8 +64,7 @@ export default function Register() {
             {error}
           </Alert>
           <p className="mt-4 text-center text-sm text-gray-500 md:mt-10">
-            Already have an account?{" "}
-            <StyledLink to="/sign-in">Sign in</StyledLink>
+            Already have an account? <StyledLink to="/sign-in">Sign in</StyledLink>
           </p>
         </div>
       </FormCard>
@@ -97,7 +76,6 @@ export function ErrorBoundary() {
   const error = useRouteError();
   return (
     <div>
-      <SimpleHeader />
       <FormCard header="Create Your Account">
         <Alert variant="error" header="Something went wrong" revalidateable>
           <div>{getErrorBoundaryMessage(error)}</div>

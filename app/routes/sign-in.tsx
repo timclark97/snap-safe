@@ -9,14 +9,7 @@ import {
 
 import { emailSignInStart } from "@/lib/services/auth-service";
 import { getSessionId } from "@/lib/services/session-service";
-import SimpleHeader from "@/components/common/SimpleHeader";
-import {
-  Alert,
-  StyledLink,
-  FormCard,
-  Input,
-  Button
-} from "@/components/common";
+import { Alert, StyledLink, FormCard, Input, Button } from "@/components/common";
 import GoogleButton from "@/components/GoogleButton";
 import { getAuthOptions } from "@/lib/services/auth-service";
 import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";
@@ -29,12 +22,10 @@ export const meta: MetaFunction = () => {
 export async function loader({ request }: LoaderFunctionArgs) {
   const sessionId = await getSessionId(request);
   if (sessionId) {
-    return redirect("/dash");
+    return redirect("/");
   }
 
-  const error = new URL(request.url).searchParams
-    .get("error_message")
-    ?.toString();
+  const error = new URL(request.url).searchParams.get("error_message")?.toString();
 
   return json({ options: getAuthOptions("sign-in"), error });
 }
@@ -54,7 +45,6 @@ export default function Register() {
 
   return (
     <div>
-      <SimpleHeader />
       <FormCard header="Welcome Back">
         <div className="grid gap-6">
           {fetcher.data?.success ? (
@@ -63,12 +53,7 @@ export default function Register() {
             <>
               {options.email.on && (
                 <fetcher.Form method="POST" className="grid gap-4">
-                  <Input
-                    name="email"
-                    autoComplete="email"
-                    label="Email"
-                    type="email"
-                  />
+                  <Input name="email" autoComplete="email" label="Email" type="email" />
                   <Button type="submit">Continue with Email</Button>
                 </fetcher.Form>
               )}
@@ -93,7 +78,6 @@ export function ErrorBoundary() {
   const error = useRouteError();
   return (
     <div>
-      <SimpleHeader />
       <FormCard header="Welcome Back">
         <Alert variant="error" header="Something went wrong" revalidateable>
           <div>{getErrorBoundaryMessage(error)}</div>

@@ -15,9 +15,7 @@ const sessionCookie = createCookie("s_id", {
  * This returns the session id
  */
 export const getSessionId = async (req: Request) => {
-  const id = (await sessionCookie.parse(
-    req.headers.get("Cookie") ?? ""
-  )) as string;
+  const id = (await sessionCookie.parse(req.headers.get("Cookie") ?? "")) as string;
   if (!id) {
     return undefined;
   }
@@ -45,6 +43,7 @@ export const requireSession = async (request: Request) => {
       }
     });
   }
+
   const session = await sqlite.query.sessions.findFirst({
     where: (s, { eq }) => eq(s.id, sessionId),
     columns: {

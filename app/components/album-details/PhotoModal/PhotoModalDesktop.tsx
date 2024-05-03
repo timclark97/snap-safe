@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
-import type { PhotosWithObjectUrl } from "@/routes/dash.albums.$id";
+import type { PhotosWithObjectUrl } from "@/routes/albums.$id";
+import { EncryptedPhoto } from "../EncryptedPhoto";
 
-export default function PhotoModal({
+export default function PhotoModalDesktop({
   isOpen,
   setIsOpen,
   photos,
@@ -17,28 +18,8 @@ export default function PhotoModal({
   const [currentIndex, setCurrentIndex] = useState<number | undefined>(index);
 
   useEffect(() => {
-    if (isOpen) {
-      const scrollBarCompensation = window.innerWidth - document.body.offsetWidth;
-      document.body.style.overflow = "hidden";
-      document.body.style.paddingRight = `${scrollBarCompensation}px`;
-    }
-    if (!isOpen) {
-      document.body.style.overflow = "auto";
-      document.body.style.paddingRight = "0px";
-    }
-    return () => {
-      document.body.style.overflow = "auto";
-      document.body.style.paddingRight = "0px";
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
     setCurrentIndex(index);
   }, [isOpen, index]);
-
-  if (!isOpen) {
-    return null;
-  }
 
   return (
     <div
@@ -90,9 +71,8 @@ export default function PhotoModal({
         >
           <div className="h-[95vh]">
             {currentIndex !== undefined && (
-              <img
-                src={photos[currentIndex].objectUrl}
-                alt={photos[currentIndex].id}
+              <EncryptedPhoto
+                photo={photos[currentIndex]}
                 className="object-contain h-full w-auto max-w-[70vw] rounded-md overflow-hidden bg-transparent text-transparent"
               />
             )}

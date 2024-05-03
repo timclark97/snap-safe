@@ -104,7 +104,7 @@ export default function AcceptInvite() {
 
   useEffect(() => {
     if (fetcher?.data?.success && fetcher.data.albumId) {
-      navigate(`/dash/albums/${fetcher.data.albumId}`);
+      navigate(`/albums/${fetcher.data.albumId}`);
     }
   }, [fetcher]);
 

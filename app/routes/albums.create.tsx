@@ -55,6 +55,9 @@ export default function DashAlbumCreate() {
       const albumName = fd.get("name") as string;
       const albumDescription = fd.get("description") as string;
       const mk = await getMasterKey(user.id);
+      if (!mk) {
+        return;
+      }
       const key = await createAlbumKey();
       const { iv, wrappedKey } = await wrapAlbumKey(key, mk);
 
@@ -81,7 +84,7 @@ export default function DashAlbumCreate() {
     ) {
       storeKey(albumKey, fetcher.data.albumId, user.id).then(() => {
         setAlbumKey(null);
-        navigate(`/dash/albums/${fetcher.data!.albumId}`);
+        navigate(`/albums/${fetcher.data!.albumId}`);
       });
     }
   }, [fetcher, albumKey]);

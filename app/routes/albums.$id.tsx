@@ -12,7 +12,6 @@ import { getAlbumDetails } from "@/lib/services/album-service";
 import { listPhotos } from "@/lib/services/photo-service";
 import PhotoGrid from "@/components/album-details/PhotoGrid";
 import AlbumHeader from "@/components/album-details/AlbumHeader";
-import PhotoModal from "@/components/album-details/PhotoModal";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const session = await requireSession(request);
@@ -38,7 +37,6 @@ export default function Album() {
   const [photosWithObjectUrls, setPhotosWithObjectUrls] = useState<PhotosWithObjectUrl[]>(
     []
   );
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
 
   const setAlbumKey = async () => {
@@ -77,18 +75,8 @@ export default function Album() {
           }
         }}
       />
-      <PhotoModal
-        photos={photosWithObjectUrls}
-        index={currentIndex}
-        isOpen={photoModalOpen}
-        setIsOpen={setPhotoModalOpen}
-      />
       <PhotoGrid
-        photos={photos}
-        onPhotoClick={(v) => {
-          setCurrentIndex(v.index);
-          setPhotoModalOpen(true);
-        }}
+        photos={photosWithObjectUrls}
         onDownload={({ objectUrl, id }) => {
           setPhotosWithObjectUrls((prev) => {
             return prev.map((photo) => {

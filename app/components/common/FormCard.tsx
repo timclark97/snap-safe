@@ -15,9 +15,7 @@ export default function FormCard({
           <span className="text-secondary pointer-events-none">Safe</span>
         </div>
         <div className="text-center text-2xl font-medium">{header}</div>
-        {subHeader && (
-          <div className="text-center text-gray-600 mt-2">{subHeader}</div>
-        )}
+        {subHeader && <div className="text-center text-gray-600 mt-2">{subHeader}</div>}
       </div>
       {children}
     </div>

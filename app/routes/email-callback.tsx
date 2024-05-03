@@ -2,14 +2,10 @@ import { useEffect } from "react";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useRouteError } from "@remix-run/react";
 
-import {
-  emailRegisterFinish,
-  emailSignInFinish
-} from "@/lib/services/auth-service";
+import { emailRegisterFinish, emailSignInFinish } from "@/lib/services/auth-service";
 import { sqlite, sessions } from "@/lib/sqlite";
 import { createSessionCookie } from "@/lib/services/session-service";
 import { Alert, StyledLink } from "@/components/common";
-import SimpleHeader from "@/components/common/SimpleHeader";
 import { getErrorBoundaryMessage } from "@/lib/helpers/error-helpers";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -42,7 +38,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .returning();
 
   const cookie = await createSessionCookie(session.id, session.expiresOn);
-  const sendTo = type === "register" ? "/dash/onboarding/name" : "/dash";
+  const sendTo = type === "register" ? "/onboarding/name" : "/";
 
   return json(
     {
@@ -76,7 +72,6 @@ export function ErrorBoundary() {
   const error = useRouteError();
   return (
     <div>
-      <SimpleHeader />
       <div className=" mt-4 flex min-h-full flex-1 flex-col justify-center px-6 py-8 md:mt-10 lg:px-8">
         <div className=" mt-4 sm:mx-auto sm:w-full sm:max-w-sm md:mt-10">
           <Alert variant="error" header="Something went wrong">

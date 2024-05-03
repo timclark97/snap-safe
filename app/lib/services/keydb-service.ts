@@ -20,12 +20,17 @@ const getDB = async () => {
   if (keyDb) {
     return keyDb;
   }
-  keyDb = await openDB<KeyDB>("kdb", 1, {
-    upgrade(db) {
-      db.createObjectStore("ak");
-    }
-  });
-  return keyDb;
+  try {
+    keyDb = await openDB<KeyDB>("kdb", 1, {
+      upgrade(db) {
+        db.createObjectStore("ak");
+      }
+    });
+    return keyDb;
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : e);
+    throw new Error("Error opening key database");
+  }
 };
 
 export const storeKey = async (key: CryptoKey, keyId: string, userId: string) => {
@@ -103,7 +108,7 @@ export const getKey = async (keyId: string, userId: string) => {
     return key;
   } catch (e) {
     console.error(e instanceof Error ? e.message : e);
-    return;
+    throw new Error(`Error unwrapping key ${keyId}`);
   }
 };
 

@@ -100,9 +100,9 @@ onmessage = async (event: {
     state: "preparing_upload"
   });
 
-  const resp = await fetch(`/dash/albums/${data.albumId}/upload-url`, {
+  const resp = await fetch(`/albums/${data.albumId}/upload-url`, {
     method: "POST",
-    body: JSON.stringify({ photoId: data.id })
+    body: JSON.stringify({ photoId: data.id, contentLength: encryptedFile.byteLength })
   });
 
   if (!resp.ok) {
@@ -147,7 +147,7 @@ onmessage = async (event: {
     state: "storing"
   });
 
-  const storeRequest = await fetch(`/dash/albums/${data.albumId}/photo`, {
+  const storeRequest = await fetch(`/albums/${data.albumId}/photo`, {
     method: "POST",
     body: JSON.stringify({ photoId: data.id, iv: arrayToBase64(iv) })
   });

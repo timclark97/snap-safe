@@ -23,21 +23,26 @@ export const createGetRequest = async (id: string) => {
         "content-type": "application/octet-stream"
       },
       aws: {
-        signQuery: true
+        signQuery: true,
+        allHeaders: true
       }
     }
   );
   return { url: req.url };
 };
 
-export const createUploadRequest = async (id: string) => {
-  const thing = new Request(
-    `${process.env.BUCKET_ENDPOINT}/${id}?X-Amz-Expires=100`,
-    { method: "PUT" }
-  );
+export const createUploadRequest = async (id: string, contentLength: number) => {
+  const thing = new Request(`${process.env.BUCKET_ENDPOINT}/${id}?X-Amz-Expires=100`, {
+    method: "PUT",
+    headers: {
+      "content-type": "application/octet-stream",
+      "content-length": contentLength.toString()
+    }
+  });
   const req = await bucket.sign(thing, {
     aws: {
-      signQuery: true
+      signQuery: true,
+      allHeaders: true
     }
   });
   return { url: req.url };

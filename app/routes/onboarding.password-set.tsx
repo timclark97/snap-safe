@@ -39,7 +39,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const { user } = await requireSession(request);
 
   if (user.mkS) {
-    return redirect("/dash/home");
+    return redirect("/");
   }
 
   return json({ userId: user.id });
@@ -48,7 +48,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export async function action({ request }: ActionFunctionArgs) {
   const { user } = await requireSession(request);
   if (user.mkS || user.prK || user.prKIv || user.mkT || user.mkTIv) {
-    return redirect("/dash");
+    return redirect("/");
   }
 
   const validation = setPasswordValidator(await request.formData());
@@ -78,7 +78,7 @@ export default function SetPassword() {
       setIsLoading(false);
       storeKey(key, userId, userId)
         .then(() => {
-          navigate("/dash/home");
+          navigate("/");
         })
         .catch((e) => {
           setError(e instanceof Error ? e.message : "Something went wrong.");
@@ -90,13 +90,11 @@ export default function SetPassword() {
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     try {
       e.preventDefault();
-      setIsLoading(true);
+      // setIsLoading(true);
       const fd = new FormData(e.currentTarget);
       const pw = fd.get("password")?.toString();
       if (!pw || !isSecurePassword(pw)) {
-        setError(
-          "Your password does not meet the requirements. Try a new one."
-        );
+        setError("Your password does not meet the requirements. Try a new one.");
         setIsLoading(false);
         return;
       }

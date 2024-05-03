@@ -22,29 +22,40 @@ export const getDbKey = async (userId: string) => {
   if (dbKey) {
     return dbKey;
   }
+  let wrappingKeyMaterial: CryptoKey;
 
-  const wrappingKeyMaterial = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(navigator.userAgent + userId),
-    { name: "PBKDF2" },
-    false,
-    ["deriveKey", "deriveBits"]
-  );
+  try {
+    wrappingKeyMaterial = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(navigator.userAgent + userId),
+      { name: "PBKDF2" },
+      false,
+      ["deriveKey", "deriveBits"]
+    );
+  } catch (e) {
+    console.error(e);
+    throw new Error(`Error importing key: ${e instanceof Error ? e.message : e}`);
+  }
 
-  dbKey = await crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt: new TextEncoder().encode(userId),
-      iterations: 600000,
-      hash: "SHA-256"
-    },
-    wrappingKeyMaterial,
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["unwrapKey", "wrapKey"]
-  );
+  try {
+    dbKey = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: new TextEncoder().encode(userId),
+        iterations: 600000,
+        hash: "SHA-256"
+      },
+      wrappingKeyMaterial!,
+      { name: "AES-GCM", length: 256 },
+      true,
+      ["unwrapKey", "wrapKey"]
+    );
 
-  return dbKey!;
+    return dbKey!;
+  } catch (e) {
+    console.error(e);
+    throw new Error(`Error deriving key: ${e instanceof Error ? e.message : e}`);
+  }
 };
 
 /**
@@ -53,12 +64,8 @@ export const getDbKey = async (userId: string) => {
  * [PBKD2 params](https://developer.mozilla.org/en-US/docs/Web/API/Pbkdf2Params).
  * [MDN derive key example](https://github.com/mdn/dom-examples/blob/main/web-crypto/wrap-key/raw.js).
  */
-export const deriveMK = async (
-  userId: string,
-  password: string,
-  salt: SaltType
-) => {
-  const wrappingKeyMaterial = await crypto.subtle.importKey(
+export const deriveMK = async (userId: string, password: string, salt: SaltType) => {
+  const keyMaterial = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(password.trim().normalize() + userId),
     { name: "PBKDF2" },
@@ -73,18 +80,21 @@ export const deriveMK = async (
     saltArray = salt;
   }
 
-  return await crypto.subtle.deriveKey(
+  const keyData = await crypto.subtle.deriveBits(
     {
       name: "PBKDF2",
+      hash: "SHA-256",
       salt: saltArray,
-      iterations: 210000,
-      hash: "SHA-256"
+      iterations: 210000
     },
-    wrappingKeyMaterial,
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["unwrapKey", "wrapKey", "encrypt", "decrypt"]
+    keyMaterial,
+    256
   );
+
+  return await crypto.subtle.importKey("raw", keyData, "AES-GCM", true, [
+    "wrapKey",
+    "unwrapKey"
+  ]);
 };
 
 export const testMK = async (mk: CryptoKey, mkt: string, mktIv: string) => {
@@ -167,11 +177,10 @@ export const unwrapSharedKey = async (
 };
 
 export const createAlbumKey = async () => {
-  return await crypto.subtle.generateKey(
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["encrypt", "decrypt"]
-  );
+  return await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, [
+    "encrypt",
+    "decrypt"
+  ]);
 };
 
 /**
@@ -219,10 +228,7 @@ export const initializeKeyPair = async (masterKey: CryptoKey) => {
 /**
  * Client side - Wraps album key with user's master key
  */
-export const wrapAlbumKey = async (
-  albumKey: CryptoKey,
-  masterKey: CryptoKey
-) => {
+export const wrapAlbumKey = async (albumKey: CryptoKey, masterKey: CryptoKey) => {
   const iv = createIv();
   const wrappedKey = await crypto.subtle.wrapKey("raw", albumKey, masterKey, {
     name: "AES-GCM",

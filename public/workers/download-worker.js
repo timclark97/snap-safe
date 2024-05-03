@@ -249,26 +249,37 @@ var getDbKey = async (userId) => {
   if (dbKey) {
     return dbKey;
   }
-  const wrappingKeyMaterial = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(navigator.userAgent + userId),
-    { name: "PBKDF2" },
-    false,
-    ["deriveKey", "deriveBits"]
-  );
-  dbKey = await crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt: new TextEncoder().encode(userId),
-      iterations: 6e5,
-      hash: "SHA-256"
-    },
-    wrappingKeyMaterial,
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["unwrapKey", "wrapKey"]
-  );
-  return dbKey;
+  let wrappingKeyMaterial;
+  try {
+    wrappingKeyMaterial = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(navigator.userAgent + userId),
+      { name: "PBKDF2" },
+      false,
+      ["deriveKey", "deriveBits"]
+    );
+  } catch (e) {
+    console.error(e);
+    throw new Error(`Error importing key: ${e instanceof Error ? e.message : e}`);
+  }
+  try {
+    dbKey = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: new TextEncoder().encode(userId),
+        iterations: 6e5,
+        hash: "SHA-256"
+      },
+      wrappingKeyMaterial,
+      { name: "AES-GCM", length: 256 },
+      true,
+      ["unwrapKey", "wrapKey"]
+    );
+    return dbKey;
+  } catch (e) {
+    console.error(e);
+    throw new Error(`Error deriving key: ${e instanceof Error ? e.message : e}`);
+  }
 };
 
 // app/lib/services/keydb-service.ts
@@ -277,12 +288,17 @@ var getDB = async () => {
   if (keyDb) {
     return keyDb;
   }
-  keyDb = await openDB("kdb", 1, {
-    upgrade(db) {
-      db.createObjectStore("ak");
-    }
-  });
-  return keyDb;
+  try {
+    keyDb = await openDB("kdb", 1, {
+      upgrade(db) {
+        db.createObjectStore("ak");
+      }
+    });
+    return keyDb;
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : e);
+    throw new Error("Error opening key database");
+  }
 };
 var getKey = async (keyId, userId) => {
   const db = await getDB();
@@ -314,7 +330,7 @@ var getKey = async (keyId, userId) => {
     return key;
   } catch (e) {
     console.error(e instanceof Error ? e.message : e);
-    return;
+    throw new Error(`Error unwrapping key ${keyId}`);
   }
 };
 
@@ -346,7 +362,7 @@ onmessage = async (event) => {
     id: data.id,
     state: "preparing_download"
   });
-  const urlFetch = await fetch(`/dash/albums/${data.albumId}/download-url`, {
+  const urlFetch = await fetch(`/albums/${data.albumId}/download-url`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"

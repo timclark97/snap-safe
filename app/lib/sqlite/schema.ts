@@ -160,7 +160,9 @@ export const userRelations = relations(users, ({ many }) => ({
   albums: many(albums),
   albumKeys: many(albumKeys),
   albumPermissions: many(albumPermissions, { relationName: "user" }),
-  albumPermissionsGranted: many(albumPermissions, { relationName: "grantedBy" })
+  albumPermissionsGranted: many(albumPermissions, { relationName: "grantedBy" }),
+  albumInvites: many(albumInvites, { relationName: "sharedTo" }),
+  albumInvitesGranted: many(albumInvites, { relationName: "sharedBy" })
 }));
 
 export const sessionRelations = relations(sessions, ({ one }) => ({
@@ -197,25 +199,22 @@ export const photoRelations = relations(photos, ({ one }) => ({
   })
 }));
 
-export const albumPermissionRelations = relations(
-  albumPermissions,
-  ({ one }) => ({
-    user: one(users, {
-      fields: [albumPermissions.userId],
-      references: [users.id],
-      relationName: "user"
-    }),
-    grantedBy: one(users, {
-      fields: [albumPermissions.grantedBy],
-      references: [users.id],
-      relationName: "grantedBy"
-    }),
-    album: one(albums, {
-      fields: [albumPermissions.albumId],
-      references: [albums.id]
-    })
+export const albumPermissionRelations = relations(albumPermissions, ({ one }) => ({
+  user: one(users, {
+    fields: [albumPermissions.userId],
+    references: [users.id],
+    relationName: "user"
+  }),
+  grantedBy: one(users, {
+    fields: [albumPermissions.grantedBy],
+    references: [users.id],
+    relationName: "grantedBy"
+  }),
+  album: one(albums, {
+    fields: [albumPermissions.albumId],
+    references: [albums.id]
   })
-);
+}));
 
 export const albumKeyRelations = relations(albumKeys, ({ one }) => ({
   user: one(users, {
@@ -224,6 +223,23 @@ export const albumKeyRelations = relations(albumKeys, ({ one }) => ({
   }),
   album: one(albums, {
     fields: [albumKeys.albumId],
+    references: [albums.id]
+  })
+}));
+
+export const albumInviteRelations = relations(albumInvites, ({ one }) => ({
+  sharedTo: one(users, {
+    fields: [albumInvites.userId],
+    references: [users.id],
+    relationName: "sharedTo"
+  }),
+  sharedBy: one(users, {
+    fields: [albumInvites.grantedBy],
+    references: [users.id],
+    relationName: "sharedBy"
+  }),
+  album: one(albums, {
+    fields: [albumInvites.albumId],
     references: [albums.id]
   })
 }));

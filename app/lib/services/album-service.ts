@@ -140,7 +140,52 @@ export const shareAlbum = async (args: {
   sendEmail({
     to: email,
     subject: `${userToShare.firstName ? `${userToShare.firstName}, you` : "You"} have been invited to new album`,
-    text: `You have been invited to a new album.\nClick here to accept: ${process.env.SITE_URL}/dash/albums/accept-invite/${id}`
+    text: `You have been invited to a new album.\nClick here to accept: ${process.env.SITE_URL}/albums/accept-invite/${id}`
+  });
+};
+
+export const listAlbumMembers = async (albumId: string) => {
+  const result = await sqlite.query.albumPermissions.findMany({
+    where: (ap, { eq }) => eq(ap.albumId, albumId),
+    with: { user: true }
+  });
+  return result.map((r) => ({
+    id: r.id,
+    userId: r.userId,
+    permission: r.permission,
+    firstName: r.user.firstName,
+    lastName: r.user.lastName
+  }));
+};
+
+export const listAlbumInvites = async (albumId: string) => {
+  const result = await sqlite.query.albumInvites.findMany({
+    where: (ai, { eq }) => eq(ai.albumId, albumId),
+    with: { sharedTo: true }
+  });
+  return result.map((r) => ({
+    id: r.id,
+    userId: r.userId,
+    permission: r.permission,
+    firstName: r.sharedTo.firstName,
+    lastName: r.sharedTo.lastName
+  }));
+};
+
+export const revokeAlbumPermission = async (albumId: string, revokeUserId: string) => {
+  await sqlite.transaction(async (db) => {
+    await db
+      .delete(albumPermissions)
+      .where(
+        and(
+          eq(albumPermissions.albumId, albumId),
+          eq(albumPermissions.userId, revokeUserId)
+        )
+      );
+
+    await db
+      .delete(albumKeys)
+      .where(and(eq(albumKeys.albumId, albumId), eq(albumKeys.userId, revokeUserId)));
   });
 };
 

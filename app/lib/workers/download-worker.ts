@@ -39,7 +39,7 @@ onmessage = async (event: {
     state: "preparing_download"
   });
 
-  const urlFetch = await fetch(`/dash/albums/${data.albumId}/download-url`, {
+  const urlFetch = await fetch(`/albums/${data.albumId}/download-url`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"

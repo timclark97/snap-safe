@@ -19,7 +19,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   await updateUser(session.userId, validation.data);
 
-  return redirect("/dash/onboarding/password");
+  return redirect("/onboarding/password");
 }
 
 export default function DashLayout() {

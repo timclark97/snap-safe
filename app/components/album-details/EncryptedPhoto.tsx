@@ -5,22 +5,16 @@ import { getKey } from "@/lib/services/keydb-service";
 import { base64ToArray } from "@/lib/helpers/binary-helpers";
 
 export type OnDownload = (args: { objectUrl: string; id: string }) => void;
-export type OnClick = (args: {
-  photoId: string;
-  objectUrl: string;
-  index: number;
-}) => void;
+
+const photoCache = new Map<string, string>();
 
 export function EncryptedPhoto({
   photo,
-  index,
-  onDownload,
-  onClick
+  onDownload
 }: {
   photo: { id: string; albumId: string; iv: string };
-  index: number;
-  onDownload: OnDownload;
-  onClick?: OnClick;
+  onDownload?: OnDownload;
+  className?: string;
 }) {
   const [state, setState] = useState("preparing");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -29,15 +23,27 @@ export function EncryptedPhoto({
 
   const downloadPhoto = async () => {
     if (photoUrl) {
+      setState("done");
       return;
     }
+
+    if (photoCache.has(photo.id)) {
+      const url = photoCache.get(photo.id)!;
+      setPhotoUrl(url);
+      if (onDownload) {
+        onDownload({ objectUrl: url, id: photo.id });
+      }
+      setState("done");
+      return;
+    }
+
     const albumId = photo.albumId;
     const key = await getKey(albumId, self.id);
     if (!key) {
       setState("error");
       return;
     }
-    const urlFetch = await fetch(`/dash/albums/${albumId}/download-url`, {
+    const urlFetch = await fetch(`/albums/${albumId}/download-url`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -66,8 +72,11 @@ export function EncryptedPhoto({
 
     const decryptedPhotoBlob = new Blob([decryptedPhoto]);
     const objectUrl = URL.createObjectURL(decryptedPhotoBlob);
-    onDownload({ objectUrl, id: photo.id });
+    if (onDownload) {
+      onDownload({ objectUrl, id: photo.id });
+    }
     setPhotoUrl(objectUrl);
+    photoCache.set(photo.id, objectUrl);
     setState("done");
   };
 
@@ -87,33 +96,20 @@ export function EncryptedPhoto({
     }
 
     return () => {
-      if (photoUrl) {
-        URL.revokeObjectURL(photoUrl);
-      }
       if (photoRef.current) {
         observer.disconnect();
       }
     };
-  }, []);
+  }, [photo]);
 
   return (
-    <div
-      ref={photoRef}
-      className="overflow-hidden cursor-pointer aspect-square text-gray-200 rounded-md"
-    >
+    <div ref={photoRef} className="w-full h-full">
       {state === "done" && photoUrl && (
-        <div className="relative ">
-          <img
-            onClick={() => {
-              if (onClick) {
-                onClick({ photoId: photo.id, objectUrl: photoUrl, index });
-              }
-            }}
-            src={photoUrl}
-            alt={photo.id}
-            className="object-cover aspect-square w-full bg-gray-200 text-gray-200 h-full hover:scale-110 transition-transform z-0"
-          />
-        </div>
+        <img
+          src={photoUrl}
+          alt={photo.id}
+          className="object-cover w-full bg-gray-200 text-gray-200 h-full"
+        />
       )}
       {state !== "error" && state !== "done" && (
         <div className="h-full w-full bg-gray-200 flex items-center justify-center">

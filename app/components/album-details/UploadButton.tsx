@@ -1,6 +1,5 @@
-import { ArrowUpTrayIcon } from "@heroicons/react/24/solid";
+import { ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 
-import { colors, sizes } from "../common/Button";
 import { generateId } from "@/lib/helpers/id-generator";
 import { useUpload } from "@/lib/contexts/upload-context";
 
@@ -32,10 +31,9 @@ export default function UploadButton({
     <div>
       <label
         htmlFor="files"
-        className={`${colors.primary} ${sizes.base} flex items-center font-medium text-sm cursor-pointer rounded-md`}
+        className="rounded-full flex justify-center items-center hover:bg-gray-200 transition-colors p-2.5 cursor-pointer"
       >
-        Upload
-        <ArrowUpTrayIcon className="h-4 w-4 inline-block ml-2 stroke-2" />
+        <ArrowUpTrayIcon className="h-5 w-5 stroke-2" />
       </label>
 
       <input
