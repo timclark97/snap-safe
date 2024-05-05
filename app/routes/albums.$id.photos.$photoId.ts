@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { requireSession } from "@/lib/services/session-service";
 import { sqlite, photos } from "@/lib/sqlite";
-import { deleteObject } from "@/lib/services/bucket-service";
+import { deleteObject } from "@/lib/services/storage-service";
 import { hasAlbumPermission } from "@/lib/services/album-service";
 
 export async function action({ request, params }: ActionFunctionArgs) {

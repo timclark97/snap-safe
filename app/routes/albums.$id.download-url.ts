@@ -1,7 +1,7 @@
 import { type ActionFunctionArgs } from "@remix-run/node";
 
 import { requireSession } from "@/lib/services/session-service";
-import { createGetRequest } from "@/lib/services/bucket-service";
+import { createGetRequest } from "@/lib/services/storage-service";
 import { hasAlbumPermission } from "@/lib/services/album-service";
 
 export async function action({ request, params }: ActionFunctionArgs) {

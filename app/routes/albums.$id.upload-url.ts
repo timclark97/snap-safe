@@ -2,7 +2,7 @@ import { type ActionFunctionArgs } from "@remix-run/node";
 
 import { requireSession } from "@/lib/services/session-service";
 import { sqlite } from "@/lib/sqlite";
-import { createUploadRequest } from "@/lib/services/bucket-service";
+import { createUploadRequest } from "@/lib/services/storage-service";
 import { hasAlbumPermission } from "@/lib/services/album-service";
 
 export async function action({ request, params }: ActionFunctionArgs) {
