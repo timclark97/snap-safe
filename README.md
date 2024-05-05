@@ -1,6 +1,6 @@
 # 🎆 SnapSafe 🔐
 
-> [!INFO]
+> [!NOTE]
 > This project is still in very early stage development and not ready for use. Please consider contributing!
 
 See the [official documentation ](https://snapsafe.app) for more details.
