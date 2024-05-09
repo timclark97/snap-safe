@@ -4,17 +4,18 @@ if (
   process.env.GOOGLE_AUTH === "on" &&
   (!process.env.GOOGLE_CLIENT_ID ||
     !process.env.GOOGLE_CLIENT_SECRET ||
-    !process.env.GOOGLE_REDIRECT_URI)
+    !process.env.GOOGLE_REDIRECT_URI ||
+    !process.env.SITE_URL)
 ) {
   throw new Error(
-    "Missing GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, or GOOGLE_REDIRECT_URI"
+    "Missing GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, or SITE_URL"
   );
 }
 
 const oauthClient = new OAuth2Client({
   clientId: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  redirectUri: process.env.GOOGLE_REDIRECT_URI
+  redirectUri: process.env.SITE_URL! + process.env.GOOGLE_REDIRECT_URI!
 });
 
 export const generateAuthUrl = (state?: string) => {
