@@ -70,7 +70,7 @@ onmessage = async (event: {
     return;
   }
 
-  const key = await getKey(data.albumId, data.userId);
+  const key = await getKey(data.albumId);
   if (!key) {
     sendMessage({
       id: data.id,

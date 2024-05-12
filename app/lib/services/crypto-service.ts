@@ -93,8 +93,31 @@ export const deriveMK = async (userId: string, password: string, salt: SaltType)
 
   return await crypto.subtle.importKey("raw", keyData, "AES-GCM", true, [
     "wrapKey",
-    "unwrapKey"
+    "unwrapKey",
+    "encrypt",
+    "decrypt"
   ]);
+};
+
+/**
+ * Client side - Create a new master key from a password.
+ * The salt is encrypted by the new key to be used later to
+ * confirm the key when it is re-derived from the same password
+ */
+export const initializeMK = async (userId: string, password: string) => {
+  const salt = createSalt();
+  const key = await deriveMK(userId, password, salt);
+  const mktIv = createIv();
+  const mkt = await window.crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv: mktIv
+    },
+    key,
+    salt
+  );
+
+  return { salt, key, mktIv, mkt };
 };
 
 export const testMK = async (mk: CryptoKey, mkt: string, mktIv: string) => {
@@ -181,27 +204,6 @@ export const createAlbumKey = async () => {
     "encrypt",
     "decrypt"
   ]);
-};
-
-/**
- * Client side - Create a new master key from a password.
- * The salt is encrypted by the new key to be used later to
- * confirm the key when it is re-derived from the same password
- */
-export const initializeMK = async (userId: string, password: string) => {
-  const salt = createSalt();
-  const key = await deriveMK(userId, password, salt);
-  const mktIv = createIv();
-  const mkt = await window.crypto.subtle.encrypt(
-    {
-      name: "AES-GCM",
-      iv: mktIv
-    },
-    key,
-    salt
-  );
-
-  return { salt, key, mktIv, mkt };
 };
 
 /**

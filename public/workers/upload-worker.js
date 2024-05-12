@@ -233,6 +233,40 @@ replaceTraps((oldTraps) => ({
   }
 }));
 
+// app/lib/services/keydb-service.ts
+var KEY_DB_NAME = "kdb";
+var KEY_DB_VERSION = 1;
+var KEY_STORE_NAME = "ak";
+var keyDb;
+var getDB = async () => {
+  if (keyDb) {
+    return keyDb;
+  }
+  try {
+    keyDb = await openDB(KEY_DB_NAME, KEY_DB_VERSION, {
+      upgrade(db) {
+        db.createObjectStore(KEY_STORE_NAME);
+      }
+    });
+    return keyDb;
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : e);
+    throw new Error("Error opening key database");
+  }
+};
+var getKey = async (keyId) => {
+  const db = await getDB();
+  const key = await db.get(KEY_STORE_NAME, keyId);
+  if (!key) {
+    return;
+  }
+  if (key.setOn < new Date((/* @__PURE__ */ new Date()).getDate() + 14).getTime()) {
+    await db.delete(KEY_STORE_NAME, keyId);
+    return;
+  }
+  return key.data;
+};
+
 // app/lib/helpers/binary-helpers.ts
 var arrayToBase64 = (typedArray) => {
   let binary = "";
@@ -242,106 +276,9 @@ var arrayToBase64 = (typedArray) => {
   }
   return btoa(binary);
 };
-var base64ToArray = (base64) => {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-};
 
 // app/lib/services/crypto-service.ts
 var createIv = () => crypto.getRandomValues(new Uint8Array(12));
-var dbKey;
-var getDbKey = async (userId) => {
-  if (dbKey) {
-    return dbKey;
-  }
-  let wrappingKeyMaterial;
-  try {
-    wrappingKeyMaterial = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(navigator.userAgent + userId),
-      { name: "PBKDF2" },
-      false,
-      ["deriveKey", "deriveBits"]
-    );
-  } catch (e) {
-    console.error(e);
-    throw new Error(`Error importing key: ${e instanceof Error ? e.message : e}`);
-  }
-  try {
-    dbKey = await crypto.subtle.deriveKey(
-      {
-        name: "PBKDF2",
-        salt: new TextEncoder().encode(userId),
-        iterations: 6e5,
-        hash: "SHA-256"
-      },
-      wrappingKeyMaterial,
-      { name: "AES-GCM", length: 256 },
-      true,
-      ["unwrapKey", "wrapKey"]
-    );
-    return dbKey;
-  } catch (e) {
-    console.error(e);
-    throw new Error(`Error deriving key: ${e instanceof Error ? e.message : e}`);
-  }
-};
-
-// app/lib/services/keydb-service.ts
-var keyDb;
-var getDB = async () => {
-  if (keyDb) {
-    return keyDb;
-  }
-  try {
-    keyDb = await openDB("kdb", 1, {
-      upgrade(db) {
-        db.createObjectStore("ak");
-      }
-    });
-    return keyDb;
-  } catch (e) {
-    console.error(e instanceof Error ? e.message : e);
-    throw new Error("Error opening key database");
-  }
-};
-var getKey = async (keyId, userId) => {
-  const db = await getDB();
-  const dbKey2 = await getDbKey(userId);
-  const keyData = await db.get("ak", keyId);
-  if (!keyData) {
-    return;
-  }
-  if (!keyData.usages) {
-    throw new Error(`No usages found for key ${keyId}`);
-  }
-  if (keyData.setOn < new Date((/* @__PURE__ */ new Date()).getDate() + 14).getTime()) {
-    await db.delete("ak", keyId);
-    return;
-  }
-  try {
-    const key = await crypto.subtle.unwrapKey(
-      "raw",
-      base64ToArray(keyData.data),
-      dbKey2,
-      {
-        name: "AES-GCM",
-        iv: new TextEncoder().encode(keyId + userId)
-      },
-      { name: "AES-GCM" },
-      true,
-      keyData.usages
-    );
-    return key;
-  } catch (e) {
-    console.error(e instanceof Error ? e.message : e);
-    throw new Error(`Error unwrapping key ${keyId}`);
-  }
-};
 
 // app/lib/workers/upload-worker.ts
 var sendMessage = (message) => {
@@ -372,7 +309,7 @@ onmessage = async (event) => {
     });
     return;
   }
-  const key = await getKey(data.albumId, data.userId);
+  const key = await getKey(data.albumId);
   if (!key) {
     sendMessage({
       id: data.id,

@@ -38,7 +38,7 @@ export function EncryptedPhoto({
     }
 
     const albumId = photo.albumId;
-    const key = await getKey(albumId, self.id);
+    const key = await getKey(albumId);
     if (!key) {
       setState("error");
       return;

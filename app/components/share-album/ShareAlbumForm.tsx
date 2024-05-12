@@ -27,11 +27,11 @@ export default function ShareAlbumForm({
       if (fetcher.data?.puK) {
         setIsLoading(true);
         let albumKey: CryptoKey | undefined;
-        albumKey = await getKey(album.id, user.id);
+        albumKey = await getKey(album.id);
         if (!albumKey) {
           const mk = await getMasterKey(user.id);
           albumKey = await unwrapAlbumKey(rawKey.key, rawKey.iv, mk!);
-          storeKey(albumKey, album.id, user.id);
+          storeKey(albumKey, album.id);
         }
 
         const puKey = await importPubKey(fetcher.data.puK);

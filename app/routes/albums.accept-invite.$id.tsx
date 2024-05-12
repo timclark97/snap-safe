@@ -120,7 +120,7 @@ export default function AcceptInvite() {
     const usages: KeyUsage[] =
       data.grantedPermission === "read" ? ["decrypt"] : ["encrypt", "decrypt"];
     const albumKey = await unwrapSharedKey(pk, data.inviteKey, usages);
-    await storeKey(albumKey, data.albumId, self.id);
+    await storeKey(albumKey, data.albumId);
 
     const { wrappedKey, iv } = await wrapAlbumKey(albumKey, mk);
 

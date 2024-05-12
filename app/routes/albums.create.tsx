@@ -82,7 +82,7 @@ export default function DashAlbumCreate() {
       fetcher.data.albumKeyId &&
       albumKey
     ) {
-      storeKey(albumKey, fetcher.data.albumId, user.id).then(() => {
+      storeKey(albumKey, fetcher.data.albumId).then(() => {
         setAlbumKey(null);
         navigate(`/albums/${fetcher.data!.albumId}`);
       });

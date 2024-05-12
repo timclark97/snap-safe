@@ -40,14 +40,14 @@ export default function Album() {
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
 
   const setAlbumKey = async () => {
-    const existingKey = await getKey(album.id, self.id);
+    const existingKey = await getKey(album.id);
     if (existingKey) {
       return;
     }
 
     const masterKey = await getMasterKey(self.id);
     const albumKey = await unwrapAlbumKey(key.key, key.iv, masterKey!);
-    await storeKey(albumKey, album.id, self.id);
+    await storeKey(albumKey, album.id);
   };
 
   useEffect(() => {

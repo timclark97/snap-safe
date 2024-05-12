@@ -76,7 +76,7 @@ export default function SetPassword() {
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data && key) {
       setIsLoading(false);
-      storeKey(key, userId, userId)
+      storeKey(key, userId)
         .then(() => {
           navigate("/");
         })
@@ -90,7 +90,7 @@ export default function SetPassword() {
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     try {
       e.preventDefault();
-      // setIsLoading(true);
+      setIsLoading(true);
       const fd = new FormData(e.currentTarget);
       const pw = fd.get("password")?.toString();
       if (!pw || !isSecurePassword(pw)) {
@@ -122,9 +122,7 @@ export default function SetPassword() {
     <FormCard header="Create Your Account" subHeader="Set Your Password">
       <form onSubmit={onSubmit}>
         <fieldset disabled={isLoading} className="grid gap-4">
-          <Alert variant="error" dismissible>
-            {error}
-          </Alert>
+          <Alert variant="error">{error}</Alert>
           <Input
             required
             type="password"

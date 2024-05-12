@@ -58,10 +58,10 @@ export default function ConfirmKey() {
 
               const currentKey = await getMasterKey(data.userId);
               if (currentKey) {
-                await updateKey(mk, data.userId, data.userId);
+                await updateKey(mk, data.userId);
                 return (window.location.href = "/");
               }
-              await storeKey(mk, data.userId, data.userId);
+              await storeKey(mk, data.userId);
               return (window.location.href = "/");
             } catch (e) {
               console.error(e);

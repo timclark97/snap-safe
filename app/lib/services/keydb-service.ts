@@ -1,13 +1,14 @@
 import { openDB, DBSchema, IDBPDatabase } from "idb";
 
-import { bufferToBase64, base64ToArray } from "../helpers/binary-helpers";
-import { getDbKey } from "./crypto-service";
+const KEY_DB_NAME = "kdb";
+const KEY_DB_VERSION = 1;
+const KEY_STORE_NAME = "ak";
 
 interface KeyDB extends DBSchema {
   ak: {
     key: string;
     value: {
-      data: string;
+      data: CryptoKey;
       setOn: number;
       usages: KeyUsage[];
     };
@@ -21,9 +22,9 @@ const getDB = async () => {
     return keyDb;
   }
   try {
-    keyDb = await openDB<KeyDB>("kdb", 1, {
+    keyDb = await openDB<KeyDB>(KEY_DB_NAME, KEY_DB_VERSION, {
       upgrade(db) {
-        db.createObjectStore("ak");
+        db.createObjectStore(KEY_STORE_NAME);
       }
     });
     return keyDb;
@@ -33,21 +34,13 @@ const getDB = async () => {
   }
 };
 
-export const storeKey = async (key: CryptoKey, keyId: string, userId: string) => {
+export const storeKey = async (key: CryptoKey, keyId: string) => {
   const db = await getDB();
-  const dbKey = await getDbKey(userId);
-  if (!dbKey) {
-    throw new Error("No dbKey found");
-  }
-  const keyData = await crypto.subtle.wrapKey("raw", key, dbKey, {
-    name: "AES-GCM",
-    iv: new TextEncoder().encode(keyId + userId)
-  });
 
   await db.add(
     "ak",
     {
-      data: bufferToBase64(keyData),
+      data: key,
       setOn: new Date().getTime(),
       usages: key.usages
     },
@@ -55,18 +48,13 @@ export const storeKey = async (key: CryptoKey, keyId: string, userId: string) =>
   );
 };
 
-export const updateKey = async (key: CryptoKey, keyId: string, userId: string) => {
+export const updateKey = async (key: CryptoKey, keyId: string) => {
   const db = await getDB();
-  const dbKey = await getDbKey(userId);
-  const keyData = await crypto.subtle.wrapKey("raw", key, dbKey, {
-    name: "AES-GCM",
-    iv: new TextEncoder().encode(keyId + userId)
-  });
 
   await db.put(
-    "ak",
+    KEY_STORE_NAME,
     {
-      data: bufferToBase64(keyData),
+      data: key,
       setOn: new Date().getTime(),
       usages: key.usages
     },
@@ -74,51 +62,29 @@ export const updateKey = async (key: CryptoKey, keyId: string, userId: string) =
   );
 };
 
-export const getKey = async (keyId: string, userId: string) => {
+export const getKey = async (keyId: string) => {
   const db = await getDB();
-  const dbKey = await getDbKey(userId);
-  const keyData = await db.get("ak", keyId);
-  if (!keyData) {
-    return;
-  }
 
-  if (!keyData.usages) {
-    throw new Error(`No usages found for key ${keyId}`);
+  const key = await db.get(KEY_STORE_NAME, keyId);
+  if (!key) {
+    return;
   }
 
   // Delete the key if it is older than 14 days
-  if (keyData.setOn < new Date(new Date().getDate() + 14).getTime()) {
-    await db.delete("ak", keyId);
+  if (key.setOn < new Date(new Date().getDate() + 14).getTime()) {
+    await db.delete(KEY_STORE_NAME, keyId);
     return;
   }
 
-  try {
-    const key = await crypto.subtle.unwrapKey(
-      "raw",
-      base64ToArray(keyData.data),
-      dbKey,
-      {
-        name: "AES-GCM",
-        iv: new TextEncoder().encode(keyId + userId)
-      },
-      { name: "AES-GCM" },
-      true,
-      keyData.usages
-    );
-    return key;
-  } catch (e) {
-    console.error(e instanceof Error ? e.message : e);
-    throw new Error(`Error unwrapping key ${keyId}`);
-  }
+  return key.data;
 };
 
 export const getMasterKey = async (userId: string) => {
-  const key = await getKey(userId, userId);
-
+  const key = await getKey(userId);
   return key;
 };
 
 export const clearStore = async () => {
   const db = await getDB();
-  await db.clear("ak");
+  await db.clear(KEY_STORE_NAME);
 };
